@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { BookOpen, Clock as ClockIcon, Bookmark } from 'lucide-react';
 import LazyImage from './ui/LazyImage';
-import { getMangaTitle, getCoverUrl, getLanguageFlag, formatRelativeTime } from '../types';
+import { getLanguageFlag, formatRelativeTime } from '../types';
 import { addToReadLater, isInReadLater, removeFromReadLater } from '../services/storage';
 import { useToast } from './ui/Toast';
 import { useState } from 'react';
@@ -9,9 +9,10 @@ import type { Chapter, Manga } from '../types';
 
 interface ChapterCardProps {
   chapter: Chapter;
+  coverMap?: Record<string, string>;
 }
 
-export default function ChapterCard({ chapter }: ChapterCardProps) {
+export default function ChapterCard({ chapter, coverMap = {} }: ChapterCardProps) {
   const { addToast } = useToast();
 
   // Extract manga info from relationships
@@ -22,10 +23,8 @@ export default function ChapterCard({ chapter }: ChapterCardProps) {
     ? (mangaAttrs.title['en'] || mangaAttrs.title['ja-ro'] || mangaAttrs.title['ja'] || Object.values(mangaAttrs.title)[0] || 'Unknown')
     : 'Unknown Manga';
 
-  // Cover - from manga relationship
-  const coverRel = mangaRel?.attributes
-    ? undefined // chapter includes don't have nested cover_art
-    : undefined;
+  // Cover URL from coverMap (fetched by parent)
+  const coverUrl = coverMap[mangaId] || '';
 
   // Group info
   const groupRel = chapter.relationships.find(r => r.type === 'scanlation_group');
@@ -57,7 +56,7 @@ export default function ChapterCard({ chapter }: ChapterCardProps) {
       {/* Cover thumbnail */}
       <Link to={`/manga/${mangaId}`} className="shrink-0">
         <LazyImage
-          src={`/uploads/covers/${mangaId}/placeholder.256.jpg`}
+          src={coverUrl}
           alt={mangaTitle}
           className="w-16 h-22 md:w-18 md:h-25 rounded-lg overflow-hidden bg-bg-tertiary cursor-pointer hover:ring-2 hover:ring-accent/40 transition-all"
         />

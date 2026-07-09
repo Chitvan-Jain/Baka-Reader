@@ -1,16 +1,19 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Plus, Trash2, Edit3, List, ChevronRight, BookOpen, X } from 'lucide-react';
 import {
   getReadingLists, createReadingList, deleteReadingList, updateReadingList,
   removeMangaFromList,
 } from '../services/storage';
+import { getMangaByIds } from '../services/mangadex';
+import { getCoverFileName } from '../types';
 import Modal from '../components/ui/Modal';
 import { useToast } from '../components/ui/Toast';
 import type { ReadingList } from '../types';
 
 export default function ReadingListPage() {
   const [lists, setLists] = useState(getReadingLists());
+  const [coverMap, setCoverMap] = useState<Record<string, string>>({});
   const [showCreate, setShowCreate] = useState(false);
   const [editingList, setEditingList] = useState<ReadingList | null>(null);
   const [newListName, setNewListName] = useState('');
@@ -18,6 +21,24 @@ export default function ReadingListPage() {
   const { addToast } = useToast();
 
   const refresh = () => setLists(getReadingLists());
+
+  // Fetch covers for all manga in lists
+  useEffect(() => {
+    const allIds = [...new Set(lists.flatMap(l => l.mangaIds))];
+    const idsToFetch = allIds.filter(id => !coverMap[id]);
+    if (idsToFetch.length === 0) return;
+
+    getMangaByIds(idsToFetch).then(res => {
+      const newMap: Record<string, string> = { ...coverMap };
+      for (const manga of res.data) {
+        const fileName = getCoverFileName(manga);
+        if (fileName) {
+          newMap[manga.id] = `/uploads/covers/${manga.id}/${fileName}.256.jpg`;
+        }
+      }
+      setCoverMap(newMap);
+    }).catch(() => {});
+  }, [lists]);
 
   const handleCreate = () => {
     if (!newListName.trim()) return;
@@ -119,7 +140,7 @@ export default function ReadingListPage() {
                       className="shrink-0 w-14 h-20 rounded-lg overflow-hidden bg-bg-tertiary hover:ring-2 hover:ring-accent/40 transition-all"
                     >
                       <img
-                        src={`/uploads/covers/${mangaId}/placeholder.256.jpg`}
+                        src={coverMap[mangaId] || ''}
                         alt=""
                         className="w-full h-full object-cover"
                         onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
