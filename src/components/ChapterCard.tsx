@@ -1,34 +1,35 @@
-import { Link } from 'react-router-dom';
-import { BookOpen, Clock as ClockIcon, Bookmark } from 'lucide-react';
-import LazyImage from './ui/LazyImage';
-import { getLanguageFlag, formatRelativeTime } from '../types';
-import { addToReadLater, isInReadLater, removeFromReadLater } from '../services/storage';
-import { useToast } from './ui/Toast';
-import { useState } from 'react';
-import type { Chapter, Manga } from '../types';
+import { Link } from "react-router-dom";
+import { BookOpen, Clock as ClockIcon, Bookmark } from "lucide-react";
+import LazyImage from "./ui/LazyImage";
+import { getMangaTitle, getCoverUrl, getLanguageFlag, formatRelativeTime } from "../types";
+import { addToReadLater, isInReadLater, removeFromReadLater } from "../services/storage";
+import { useToast } from "./ui/Toast";
+import { useState } from "react";
+import type { Chapter, Manga } from "../types";
 
 interface ChapterCardProps {
   chapter: Chapter;
-  coverMap?: Record<string, string>;
 }
 
-export default function ChapterCard({ chapter, coverMap = {} }: ChapterCardProps) {
+export default function ChapterCard({ chapter }: ChapterCardProps) {
   const { addToast } = useToast();
 
   // Extract manga info from relationships
-  const mangaRel = chapter.relationships.find(r => r.type === 'manga');
-  const mangaId = mangaRel?.id || '';
-  const mangaAttrs = mangaRel?.attributes as Manga['attributes'] | undefined;
+  const mangaRel = chapter.relationships.find((r) => r.type === "manga");
+  const mangaId = mangaRel?.id || "";
+  const mangaAttrs = mangaRel?.attributes as Manga["attributes"] | undefined;
   const mangaTitle = mangaAttrs?.title
-    ? (mangaAttrs.title['en'] || mangaAttrs.title['ja-ro'] || mangaAttrs.title['ja'] || Object.values(mangaAttrs.title)[0] || 'Unknown')
-    : 'Unknown Manga';
+    ? mangaAttrs.title["en"] || mangaAttrs.title["ja-ro"] || mangaAttrs.title["ja"] || Object.values(mangaAttrs.title)[0] || "Unknown"
+    : "Unknown Manga";
 
-  // Cover URL from coverMap (fetched by parent)
-  const coverUrl = coverMap[mangaId] || '';
+  // Cover - from manga relationship
+  const coverRel = mangaRel?.attributes
+    ? undefined // chapter includes don't have nested cover_art
+    : undefined;
 
   // Group info
-  const groupRel = chapter.relationships.find(r => r.type === 'scanlation_group');
-  const groupName = groupRel?.attributes?.name || 'Unknown Group';
+  const groupRel = chapter.relationships.find((r) => r.type === "scanlation_group");
+  const groupName = groupRel?.attributes?.name || "Unknown Group";
 
   const chapterNum = chapter.attributes.chapter;
   const chapterTitle = chapter.attributes.title;
@@ -43,11 +44,11 @@ export default function ChapterCard({ chapter, coverMap = {} }: ChapterCardProps
     if (inReadLater) {
       removeFromReadLater(mangaId);
       setInReadLater(false);
-      addToast('Removed from Read Later', 'info');
+      addToast("Removed from Read Later", "info");
     } else {
       addToReadLater({ mangaId, mangaTitle, addedAt: Date.now() });
       setInReadLater(true);
-      addToast('Added to Read Later', 'success');
+      addToast("Added to Read Later", "success");
     }
   };
 
@@ -56,7 +57,7 @@ export default function ChapterCard({ chapter, coverMap = {} }: ChapterCardProps
       {/* Cover thumbnail */}
       <Link to={`/manga/${mangaId}`} className="shrink-0">
         <LazyImage
-          src={coverUrl}
+          src={`/uploads/covers/${mangaId}/placeholder.256.jpg`}
           alt={mangaTitle}
           className="w-16 h-22 md:w-18 md:h-25 rounded-lg overflow-hidden bg-bg-tertiary cursor-pointer hover:ring-2 hover:ring-accent/40 transition-all"
         />
@@ -66,10 +67,7 @@ export default function ChapterCard({ chapter, coverMap = {} }: ChapterCardProps
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
-            <Link
-              to={`/manga/${mangaId}`}
-              className="text-sm font-semibold text-text-primary hover:text-accent transition-colors line-clamp-1"
-            >
+            <Link to={`/manga/${mangaId}`} className="text-sm font-semibold text-text-primary hover:text-accent transition-colors line-clamp-1">
               {mangaTitle}
             </Link>
             <p className="text-xs text-text-secondary mt-0.5 line-clamp-1">
@@ -101,8 +99,8 @@ export default function ChapterCard({ chapter, coverMap = {} }: ChapterCardProps
           </Link>
           <button
             onClick={handleReadLater}
-            className={`p-1.5 rounded-lg transition-colors ${inReadLater ? 'bg-accent-secondary/20 text-accent-secondary' : 'bg-bg-tertiary text-text-muted hover:text-text-primary hover:bg-bg-hover'}`}
-            title={inReadLater ? 'Remove from Read Later' : 'Add to Read Later'}
+            className={`p-1.5 rounded-lg transition-colors ${inReadLater ? "bg-accent-secondary/20 text-accent-secondary" : "bg-bg-tertiary text-text-muted hover:text-text-primary hover:bg-bg-hover"}`}
+            title={inReadLater ? "Remove from Read Later" : "Add to Read Later"}
           >
             <ClockIcon size={14} />
           </button>
