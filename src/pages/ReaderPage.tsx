@@ -327,6 +327,7 @@ export default function ReaderPage() {
                 className="max-w-full"
                 style={{ maxWidth: `${settings.zoom}%` }}
                 loading={i < 5 ? 'eager' : 'lazy'}
+                referrerPolicy="no-referrer"
                 onLoad={() => {
                   // Track current page based on scroll position
                 }}
@@ -344,6 +345,7 @@ export default function ReaderPage() {
                   alt={`Page ${pageIdx + 1}`}
                   className="max-h-full object-contain"
                   style={{ maxWidth: `${settings.zoom / 2}%` }}
+                  referrerPolicy="no-referrer"
                 />
               )
             ))}
@@ -356,6 +358,7 @@ export default function ReaderPage() {
               alt={`Page ${currentPage + 1}`}
               className="max-h-full max-w-full object-contain"
               style={{ maxWidth: `${settings.zoom}%` }}
+              referrerPolicy="no-referrer"
             />
           </div>
         )}

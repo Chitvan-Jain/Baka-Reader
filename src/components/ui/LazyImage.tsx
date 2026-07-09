@@ -48,6 +48,7 @@ export default function LazyImage({ src, alt, className = '', fallback, onClick 
           alt={alt}
           className={`w-full h-full object-cover transition-opacity duration-500 ${loaded ? 'opacity-100' : 'opacity-0'}`}
           loading="lazy"
+          referrerPolicy="no-referrer"
           onLoad={() => setLoaded(true)}
           onError={() => {
             setError(true);

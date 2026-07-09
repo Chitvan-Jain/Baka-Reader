@@ -129,6 +129,7 @@ export default function SearchBar() {
                       src={coverUrl}
                       alt={title}
                       className="w-10 h-14 rounded-lg object-cover bg-bg-tertiary shrink-0"
+                      referrerPolicy="no-referrer"
                       onError={e => { (e.target as HTMLImageElement).src = ''; (e.target as HTMLImageElement).className += ' skeleton-shimmer'; }}
                     />
                     <div className="flex-1 min-w-0">

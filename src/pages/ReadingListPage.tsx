@@ -132,6 +132,7 @@ export default function ReadingListPage() {
                         src={coverMap[mangaId] || ''}
                         alt=""
                         className="w-full h-full object-cover"
+                        referrerPolicy="no-referrer"
                         onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
                       />
                     </Link>

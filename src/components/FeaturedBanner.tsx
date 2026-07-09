@@ -44,9 +44,11 @@ export default function FeaturedBanner() {
   return (
     <div className="relative w-full h-72 md:h-96 rounded-2xl overflow-hidden group">
       {/* Background image */}
-      <div
-        className="absolute inset-0 bg-cover bg-center transition-all duration-700"
-        style={{ backgroundImage: `url(${coverUrl})` }}
+      <img
+        src={coverUrl}
+        alt=""
+        className="absolute inset-0 w-full h-full object-cover transition-all duration-700"
+        referrerPolicy="no-referrer"
       />
       {/* Overlay gradient */}
       <div className="absolute inset-0 bg-gradient-to-r from-bg-primary/95 via-bg-primary/70 to-transparent" />
