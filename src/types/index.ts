@@ -213,10 +213,12 @@ export function getMangaTitle(manga: Manga): string {
   return titles['en'] || titles['ja-ro'] || titles['ja'] || Object.values(titles)[0] || 'Unknown Title';
 }
 
-// Helper to get cover URL
+// Helper to get cover URL — uses direct MangaDex CDN (no CORS on <img>)
+const MANGADEX_COVERS_CDN = 'https://uploads.mangadex.org';
+
 export function getCoverUrl(mangaId: string, fileName: string | undefined, size: '256' | '512' = '256'): string {
-  if (!fileName) return '/placeholder-cover.png';
-  return `/uploads/covers/${mangaId}/${fileName}.${size}.jpg`;
+  if (!fileName) return '';
+  return `${MANGADEX_COVERS_CDN}/covers/${mangaId}/${fileName}.${size}.jpg`;
 }
 
 // Helper to extract cover filename from manga relationships

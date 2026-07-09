@@ -19,12 +19,12 @@ export default function HomePage() {
       {/* Two-column layout */}
       <div className="mt-10 flex flex-col lg:flex-row gap-6">
         {/* Main Content — 70% */}
-        <div className="flex-1 lg:w-[70%] min-w-0">
+        <div className="flex-1 min-w-0">
           <RecentChapters />
         </div>
 
         {/* Sidebar — 30% */}
-        <div className="w-full lg:w-[30%] lg:max-w-sm">
+        <div className="w-full lg:w-[340px] shrink-0">
           <Sidebar />
         </div>
       </div>

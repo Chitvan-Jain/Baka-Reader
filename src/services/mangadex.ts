@@ -243,7 +243,7 @@ export async function getMangaStatistics(mangaIds: string[]): Promise<{ statisti
 // ─── Cover URL helpers ─────────────────────────────────────────────
 
 export function buildCoverUrl(mangaId: string, fileName: string, size: '256' | '512' = '256'): string {
-  return `/uploads/covers/${mangaId}/${fileName}.${size}.jpg`;
+  return `https://uploads.mangadex.org/covers/${mangaId}/${fileName}.${size}.jpg`;
 }
 
 export function buildChapterImageUrl(baseUrl: string, hash: string, fileName: string, dataSaver = false): string {
