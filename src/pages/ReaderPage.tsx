@@ -28,7 +28,7 @@ export default function ReaderPage() {
   const [allChapters, setAllChapters] = useState<Chapter[]>([]);
   const [currentChapterIndex, setCurrentChapterIndex] = useState(-1);
 
-  const controlsTimeout = useRef<ReturnType<typeof setTimeout>>();
+  const controlsTimeout = useRef<ReturnType<typeof setTimeout>>(undefined);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Load chapter pages
