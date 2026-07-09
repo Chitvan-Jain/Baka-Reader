@@ -1,74 +1,31 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { RefreshCw } from 'lucide-react';
-import { getRecentChapters, getMangaByIds } from '../services/mangadex';
-import { getCoverFileName } from '../types';
+import { getRecentChapters } from '../services/mangadex';
 import ChapterCard from './ChapterCard';
 import { ChapterCardSkeleton } from './ui/Skeleton';
-import type { Chapter, Manga } from '../types';
-
-// Extract unique manga IDs from chapters and batch-fetch their cover filenames
-async function fetchCoversForChapters(chapters: Chapter[]): Promise<Record<string, string>> {
-  const mangaIds = [...new Set(
-    chapters
-      .map(ch => ch.relationships.find(r => r.type === 'manga')?.id)
-      .filter((id): id is string => !!id)
-  )];
-
-  if (mangaIds.length === 0) return {};
-
-  const coverMap: Record<string, string> = {};
-
-  // Batch in groups of 100 (API limit)
-  for (let i = 0; i < mangaIds.length; i += 100) {
-    const batch = mangaIds.slice(i, i + 100);
-    try {
-      const res = await getMangaByIds(batch);
-      for (const manga of res.data) {
-        const fileName = getCoverFileName(manga);
-        if (fileName) {
-          coverMap[manga.id] = `/uploads/covers/${manga.id}/${fileName}.256.jpg`;
-        }
-      }
-    } catch (e) {
-      console.error('Failed to fetch covers:', e);
-    }
-  }
-
-  return coverMap;
-}
-
+import type { Chapter } from '../types';
 export default function RecentChapters() {
   const [chapters, setChapters] = useState<Chapter[]>([]);
-  const [coverMap, setCoverMap] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [offset, setOffset] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const observerRef = useRef<HTMLDivElement>(null);
   const LIMIT = 15;
-
-  // Fetch covers whenever chapters change
-  const loadCovers = useCallback(async (newChapters: Chapter[]) => {
-    const newCovers = await fetchCoversForChapters(newChapters);
-    setCoverMap(prev => ({ ...prev, ...newCovers }));
-  }, []);
-
   // Initial load
   useEffect(() => {
     getRecentChapters(0, LIMIT)
-      .then(async res => {
+      .then(res => {
         setChapters(res.data);
         setHasMore(res.offset + res.limit < res.total);
         setOffset(LIMIT);
         setLoading(false);
-        loadCovers(res.data);
       })
       .catch(err => {
         console.error('Failed to load chapters:', err);
         setLoading(false);
       });
-  }, [loadCovers]);
-
+  }, []);
   // Load more
   const loadMore = useCallback(async () => {
     if (loadingMore || !hasMore) return;
@@ -78,14 +35,12 @@ export default function RecentChapters() {
       setChapters(prev => [...prev, ...res.data]);
       setHasMore(res.offset + res.limit < res.total);
       setOffset(prev => prev + LIMIT);
-      loadCovers(res.data);
     } catch (err) {
       console.error('Failed to load more chapters:', err);
     } finally {
       setLoadingMore(false);
     }
-  }, [offset, loadingMore, hasMore, loadCovers]);
-
+  }, [offset, loadingMore, hasMore]);
   // Infinite scroll observer
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -96,11 +51,9 @@ export default function RecentChapters() {
       },
       { rootMargin: '200px' }
     );
-
     if (observerRef.current) observer.observe(observerRef.current);
     return () => observer.disconnect();
   }, [loadMore, hasMore, loadingMore]);
-
   return (
     <section>
       <div className="flex items-center justify-between mb-5">
@@ -112,13 +65,11 @@ export default function RecentChapters() {
           onClick={() => {
             setLoading(true);
             setOffset(0);
-            setCoverMap({});
-            getRecentChapters(0, LIMIT).then(async res => {
+            getRecentChapters(0, LIMIT).then(res => {
               setChapters(res.data);
               setHasMore(res.offset + res.limit < res.total);
               setOffset(LIMIT);
               setLoading(false);
-              loadCovers(res.data);
             });
           }}
           className="p-2 rounded-lg text-text-muted hover:text-accent hover:bg-bg-tertiary transition-colors"
@@ -127,16 +78,14 @@ export default function RecentChapters() {
           <RefreshCw size={16} />
         </button>
       </div>
-
       <div className="space-y-2">
         {loading
           ? Array.from({ length: 6 }).map((_, i) => <ChapterCardSkeleton key={i} />)
           : chapters.map(chapter => (
-              <ChapterCard key={chapter.id} chapter={chapter} coverMap={coverMap} />
+              <ChapterCard key={chapter.id} chapter={chapter} />
             ))
         }
       </div>
-
       {/* Load more trigger */}
       {hasMore && (
         <div ref={observerRef} className="py-4">
@@ -147,7 +96,6 @@ export default function RecentChapters() {
           )}
         </div>
       )}
-
       {!hasMore && chapters.length > 0 && (
         <p className="text-center text-sm text-text-muted py-6">You've reached the end ✦</p>
       )}

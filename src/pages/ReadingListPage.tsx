@@ -1,45 +1,21 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Plus, Trash2, Edit3, List, ChevronRight, BookOpen, X } from 'lucide-react';
 import {
   getReadingLists, createReadingList, deleteReadingList, updateReadingList,
   removeMangaFromList,
 } from '../services/storage';
-import { getMangaByIds } from '../services/mangadex';
-import { getCoverFileName } from '../types';
 import Modal from '../components/ui/Modal';
 import { useToast } from '../components/ui/Toast';
 import type { ReadingList } from '../types';
-
 export default function ReadingListPage() {
   const [lists, setLists] = useState(getReadingLists());
-  const [coverMap, setCoverMap] = useState<Record<string, string>>({});
   const [showCreate, setShowCreate] = useState(false);
   const [editingList, setEditingList] = useState<ReadingList | null>(null);
   const [newListName, setNewListName] = useState('');
   const [newListDesc, setNewListDesc] = useState('');
   const { addToast } = useToast();
-
   const refresh = () => setLists(getReadingLists());
-
-  // Fetch covers for all manga in lists
-  useEffect(() => {
-    const allIds = [...new Set(lists.flatMap(l => l.mangaIds))];
-    const idsToFetch = allIds.filter(id => !coverMap[id]);
-    if (idsToFetch.length === 0) return;
-
-    getMangaByIds(idsToFetch).then(res => {
-      const newMap: Record<string, string> = { ...coverMap };
-      for (const manga of res.data) {
-        const fileName = getCoverFileName(manga);
-        if (fileName) {
-          newMap[manga.id] = `/uploads/covers/${manga.id}/${fileName}.256.jpg`;
-        }
-      }
-      setCoverMap(newMap);
-    }).catch(() => {});
-  }, [lists]);
-
   const handleCreate = () => {
     if (!newListName.trim()) return;
     createReadingList(newListName.trim(), newListDesc.trim());
@@ -49,13 +25,11 @@ export default function ReadingListPage() {
     refresh();
     addToast('Reading list created!', 'success');
   };
-
   const handleDelete = (id: string) => {
     deleteReadingList(id);
     refresh();
     addToast('Reading list deleted', 'info');
   };
-
   const handleUpdate = () => {
     if (!editingList || !newListName.trim()) return;
     updateReadingList(editingList.id, { name: newListName.trim(), description: newListDesc.trim() });
@@ -65,12 +39,10 @@ export default function ReadingListPage() {
     refresh();
     addToast('Reading list updated', 'success');
   };
-
   const handleRemoveManga = (listId: string, mangaId: string) => {
     removeMangaFromList(listId, mangaId);
     refresh();
   };
-
   return (
     <div className="max-w-[1000px] mx-auto px-4 md:px-6 py-6 animate-fade-in">
       <div className="flex items-center justify-between mb-6">
@@ -83,7 +55,6 @@ export default function ReadingListPage() {
           New List
         </button>
       </div>
-
       {lists.length === 0 ? (
         <div className="flex flex-col items-center py-16 text-center">
           <List size={40} className="text-text-muted mb-4" />
@@ -129,7 +100,6 @@ export default function ReadingListPage() {
                   </button>
                 </div>
               </div>
-
               {/* Manga in list */}
               {list.mangaIds.length > 0 && (
                 <div className="flex gap-2 mt-4 overflow-x-auto hide-scrollbar">
@@ -140,7 +110,7 @@ export default function ReadingListPage() {
                       className="shrink-0 w-14 h-20 rounded-lg overflow-hidden bg-bg-tertiary hover:ring-2 hover:ring-accent/40 transition-all"
                     >
                       <img
-                        src={coverMap[mangaId] || ''}
+                        src={`/uploads/covers/${mangaId}/placeholder.256.jpg`}
                         alt=""
                         className="w-full h-full object-cover"
                         onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
@@ -158,7 +128,6 @@ export default function ReadingListPage() {
           ))}
         </div>
       )}
-
       {/* Create/Edit Modal */}
       <Modal
         isOpen={showCreate || !!editingList}
