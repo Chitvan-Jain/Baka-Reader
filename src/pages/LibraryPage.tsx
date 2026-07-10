@@ -110,7 +110,7 @@ export default function LibraryPage() {
   );
 
   return (
-    <div className="max-w-[1000px] mx-auto px-4 md:px-6 py-6 animate-fade-in">
+    <div className="max-w-250 mx-auto px-4 md:px-6 py-6 animate-fade-in">
       <h1 className="text-2xl font-bold text-text-primary mb-6">My Library</h1>
 
       {/* Tabs */}

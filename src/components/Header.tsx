@@ -23,7 +23,7 @@ export default function Header() {
   return (
     <>
       <header className="sticky top-0 z-40 glass border-b border-glass-border">
-        <div className="max-w-[1440px] mx-auto px-4 md:px-6">
+        <div className="max-w-full mx-auto px-4 md:px-6">
           <div className="flex items-center justify-between h-16 md:h-18">
             {/* Logo */}
             <Link to="/" className="flex items-center gap-2.5 shrink-0 group">

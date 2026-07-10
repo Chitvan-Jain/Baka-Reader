@@ -4,7 +4,7 @@ import { BookOpen, Heart, ExternalLink } from 'lucide-react';
 export default function Footer() {
   return (
     <footer className="border-t border-border bg-bg-secondary mt-16">
-      <div className="max-w-[1440px] mx-auto px-4 md:px-6">
+      <div className="max-w-full mx-auto px-4 md:px-6">
         {/* Main footer */}
         <div className="py-12 grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Brand */}
