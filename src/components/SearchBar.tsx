@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, X, Clock, TrendingUp } from 'lucide-react';
+import { Search, X, Clock } from 'lucide-react';
 import { searchManga } from '../services/mangadex';
 import { getMangaTitle, getCoverFileName, getCoverUrl } from '../types';
 import { addRecentSearch, getRecentSearches, clearRecentSearches } from '../services/storage';
@@ -79,7 +79,7 @@ export default function SearchBar() {
     <div ref={containerRef} className="relative w-full">
       {/* Input */}
       <div className="relative">
-        <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted" />
+        <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
         <input
           ref={inputRef}
           type="text"
@@ -87,34 +87,34 @@ export default function SearchBar() {
           onChange={e => { setQuery(e.target.value); setIsOpen(true); }}
           onFocus={() => setIsOpen(true)}
           onKeyDown={handleKeyDown}
-          placeholder="Search manga, authors, tags..."
-          className="w-full h-10 pl-10 pr-10 bg-bg-tertiary border border-border rounded-xl text-sm text-text-primary placeholder-text-muted focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/20 transition-all"
+          placeholder="Search manga..."
+          className="w-full h-9 pl-9 pr-8 bg-bg-secondary border border-border rounded-lg text-sm text-text-primary placeholder-text-muted focus:outline-none focus:border-accent/40 focus:ring-1 focus:ring-accent/10 transition-colors"
         />
         {query && (
           <button
             onClick={() => { setQuery(''); setResults([]); }}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary"
+            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary"
           >
-            <X size={14} />
+            <X size={13} />
           </button>
         )}
       </div>
 
       {/* Dropdown */}
       {isOpen && (query.trim().length > 0 || recentSearches.length > 0) && (
-        <div className="absolute top-full mt-2 w-full bg-bg-secondary border border-border rounded-xl shadow-card overflow-hidden animate-scale-in z-50">
+        <div className="absolute top-full mt-1.5 w-full bg-bg-secondary border border-border rounded-lg shadow-lg overflow-hidden animate-scale-in z-50">
           {/* Loading */}
           {isLoading && (
-            <div className="flex items-center gap-2 px-4 py-3 text-sm text-text-secondary">
-              <div className="w-4 h-4 border-2 border-accent/30 border-t-accent rounded-full" style={{ animation: 'spin 0.8s linear infinite' }} />
+            <div className="flex items-center gap-2 px-3 py-2.5 text-sm text-text-secondary">
+              <div className="w-3.5 h-3.5 border-2 border-accent/30 border-t-accent rounded-full" style={{ animation: 'spin 0.8s linear infinite' }} />
               Searching...
             </div>
           )}
 
           {/* Results */}
           {!isLoading && results.length > 0 && (
-            <div className="py-2">
-              <p className="px-4 py-1 text-xs font-medium text-text-muted uppercase tracking-wider">Results</p>
+            <div className="py-1">
+              <p className="px-3 py-1 text-[11px] font-medium text-text-muted uppercase tracking-wider">Results</p>
               {results.map(manga => {
                 const title = getMangaTitle(manga);
                 const coverFile = getCoverFileName(manga);
@@ -123,12 +123,12 @@ export default function SearchBar() {
                   <button
                     key={manga.id}
                     onClick={() => handleMangaClick(manga.id)}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-bg-tertiary transition-colors text-left"
+                    className="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-bg-tertiary transition-colors text-left"
                   >
                     <img
                       src={coverUrl}
                       alt={title}
-                      className="w-10 h-14 rounded-lg object-cover bg-bg-tertiary shrink-0"
+                      className="w-8 h-11 rounded object-cover bg-bg-tertiary shrink-0"
                       referrerPolicy="no-referrer"
                       onError={e => { (e.target as HTMLImageElement).src = ''; (e.target as HTMLImageElement).className += ' skeleton-shimmer'; }}
                     />
@@ -144,7 +144,7 @@ export default function SearchBar() {
               })}
               <button
                 onClick={() => handleSearch()}
-                className="w-full px-4 py-2.5 text-sm text-accent hover:bg-bg-tertiary transition-colors text-center font-medium"
+                className="w-full px-3 py-2 text-sm text-accent hover:bg-bg-tertiary transition-colors text-center font-medium"
               >
                 View all results for "{query}"
               </button>
@@ -153,19 +153,19 @@ export default function SearchBar() {
 
           {/* No results */}
           {!isLoading && query.trim().length >= 2 && results.length === 0 && (
-            <div className="px-4 py-6 text-center text-sm text-text-secondary">
+            <div className="px-3 py-5 text-center text-sm text-text-secondary">
               No manga found for "{query}"
             </div>
           )}
 
           {/* Recent searches */}
           {query.trim().length < 2 && recentSearches.length > 0 && (
-            <div className="py-2">
-              <div className="flex items-center justify-between px-4 py-1">
-                <p className="text-xs font-medium text-text-muted uppercase tracking-wider">Recent</p>
+            <div className="py-1">
+              <div className="flex items-center justify-between px-3 py-1">
+                <p className="text-[11px] font-medium text-text-muted uppercase tracking-wider">Recent</p>
                 <button
                   onClick={() => { clearRecentSearches(); setRecentSearches([]); }}
-                  className="text-xs text-text-muted hover:text-accent transition-colors"
+                  className="text-[11px] text-text-muted hover:text-accent transition-colors"
                 >
                   Clear
                 </button>
@@ -174,9 +174,9 @@ export default function SearchBar() {
                 <button
                   key={search}
                   onClick={() => { setQuery(search); handleSearch(search); }}
-                  className="w-full flex items-center gap-3 px-4 py-2 hover:bg-bg-tertiary transition-colors text-left"
+                  className="w-full flex items-center gap-2.5 px-3 py-1.5 hover:bg-bg-tertiary transition-colors text-left"
                 >
-                  <Clock size={14} className="text-text-muted shrink-0" />
+                  <Clock size={13} className="text-text-muted shrink-0" />
                   <span className="text-sm text-text-secondary">{search}</span>
                 </button>
               ))}

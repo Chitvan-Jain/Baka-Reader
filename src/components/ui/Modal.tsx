@@ -32,27 +32,27 @@ export default function Modal({ isOpen, onClose, title, children, maxWidth = 'ma
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
         onClick={onClose}
       />
 
       {/* Modal */}
-      <div className={`relative w-full ${maxWidth} bg-bg-secondary border border-border rounded-2xl shadow-2xl animate-scale-in`}>
+      <div className={`relative w-full ${maxWidth} bg-bg-secondary border border-border rounded-lg shadow-lg animate-scale-in`}>
         {/* Header */}
         {title && (
-          <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-            <h2 className="text-lg font-semibold text-text-primary">{title}</h2>
+          <div className="flex items-center justify-between px-5 py-3.5 border-b border-border">
+            <h2 className="text-base font-semibold text-text-primary">{title}</h2>
             <button
               onClick={onClose}
-              className="p-1.5 rounded-lg text-text-secondary hover:text-text-primary hover:bg-bg-tertiary transition-colors"
+              className="p-1 rounded-md text-text-muted hover:text-text-primary hover:bg-bg-tertiary transition-colors"
             >
-              <X size={18} />
+              <X size={16} />
             </button>
           </div>
         )}
 
         {/* Content */}
-        <div className="p-6">
+        <div className="p-5">
           {children}
         </div>
       </div>

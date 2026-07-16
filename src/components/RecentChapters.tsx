@@ -103,10 +103,10 @@ export default function RecentChapters() {
 
   return (
     <section>
-      <div className="flex items-center justify-between mb-5">
+      <div className="flex items-center justify-between mb-4">
         <div>
-          <h2 className="text-xl font-bold text-text-primary">Recently Uploaded</h2>
-          <p className="text-sm text-text-secondary mt-0.5">Latest chapter releases</p>
+          <h2 className="text-lg font-semibold text-text-primary">Recently Uploaded</h2>
+          <p className="text-xs text-text-muted mt-0.5">Latest chapter releases</p>
         </div>
         <button
           onClick={() => {
@@ -121,14 +121,14 @@ export default function RecentChapters() {
               loadCovers(res.data);
             });
           }}
-          className="p-2 rounded-lg text-text-muted hover:text-accent hover:bg-bg-tertiary transition-colors"
+          className="p-2 rounded-lg text-text-muted hover:text-text-primary hover:bg-bg-tertiary transition-colors"
           title="Refresh"
         >
-          <RefreshCw size={16} />
+          <RefreshCw size={14} />
         </button>
       </div>
 
-      <div className="space-y-2">
+      <div className="space-y-1.5">
         {loading
           ? Array.from({ length: 6 }).map((_, i) => <ChapterCardSkeleton key={i} />)
           : chapters.map(chapter => {
@@ -148,7 +148,7 @@ export default function RecentChapters() {
       {hasMore && (
         <div ref={observerRef} className="py-4">
           {loadingMore && (
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               {Array.from({ length: 3 }).map((_, i) => <ChapterCardSkeleton key={i} />)}
             </div>
           )}
@@ -156,7 +156,7 @@ export default function RecentChapters() {
       )}
 
       {!hasMore && chapters.length > 0 && (
-        <p className="text-center text-sm text-text-muted py-6">You've reached the end ✦</p>
+        <p className="text-center text-xs text-text-muted py-6">End of list</p>
       )}
     </section>
   );

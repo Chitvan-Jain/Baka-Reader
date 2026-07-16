@@ -65,10 +65,10 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: string)
   }, [toast.id, toast.duration, onDismiss]);
 
   const icons = {
-    success: <CheckCircle size={18} className="text-success" />,
-    error: <AlertCircle size={18} className="text-error" />,
-    info: <Info size={18} className="text-info" />,
-    warning: <AlertTriangle size={18} className="text-warning" />,
+    success: <CheckCircle size={16} className="text-success" />,
+    error: <AlertCircle size={16} className="text-error" />,
+    info: <Info size={16} className="text-info" />,
+    warning: <AlertTriangle size={16} className="text-warning" />,
   };
 
   const barColors = {
@@ -79,15 +79,14 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: string)
   };
 
   return (
-    <div className="relative overflow-hidden bg-bg-secondary border border-border rounded-xl shadow-card animate-slide-up">
-      <div className="flex items-start gap-3 p-4">
+    <div className="relative overflow-hidden bg-bg-secondary border border-border rounded-lg shadow-lg animate-slide-up">
+      <div className="flex items-start gap-2.5 p-3">
         <span className="shrink-0 mt-0.5">{icons[toast.type]}</span>
         <p className="text-sm text-text-primary flex-1">{toast.message}</p>
         <button onClick={() => onDismiss(toast.id)} className="shrink-0 text-text-muted hover:text-text-primary">
-          <X size={14} />
+          <X size={13} />
         </button>
       </div>
-      {/* Progress bar */}
       <div className="h-0.5 bg-bg-tertiary">
         <div
           className={`h-full ${barColors[toast.type]} transition-all ease-linear`}

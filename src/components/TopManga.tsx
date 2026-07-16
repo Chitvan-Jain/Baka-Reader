@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Star, Users, BookOpen, Crown, Trophy, Medal } from 'lucide-react';
+import { Star, Users, BookOpen } from 'lucide-react';
 import { getPopularManga, getMangaStatistics, type MangaStatistics } from '../services/mangadex';
 import { getMangaTitle, getCoverFileName, getCoverUrl } from '../types';
 import LazyImage from './ui/LazyImage';
@@ -29,28 +29,11 @@ export default function TopManga() {
       .catch(() => setLoading(false));
   }, []);
 
-  const getRankIcon = (rank: number) => {
-    if (rank === 1) return <Crown size={14} className="text-gold" />;
-    if (rank === 2) return <Trophy size={14} className="text-silver" />;
-    if (rank === 3) return <Medal size={14} className="text-bronze" />;
-    return null;
-  };
-
-  const getRankStyle = (rank: number) => {
-    if (rank === 1) return 'bg-gold/10 text-gold border-gold/30';
-    if (rank === 2) return 'bg-silver/10 text-silver border-silver/30';
-    if (rank === 3) return 'bg-bronze/10 text-bronze border-bronze/30';
-    return 'bg-bg-tertiary text-text-muted border-transparent';
-  };
-
   return (
     <section>
-      <div className="flex items-center gap-2 mb-4">
-        <div className="w-1 h-5 rounded-full bg-accent" />
-        <h2 className="text-lg font-bold text-text-primary">Top 10 Manga</h2>
-      </div>
+      <h2 className="text-base font-semibold text-text-primary mb-3">Top 10</h2>
 
-      <div className="space-y-2">
+      <div className="space-y-1">
         {loading
           ? Array.from({ length: 5 }).map((_, i) => <MangaCardSkeleton key={i} />)
           : manga.map((m, i) => {
@@ -66,18 +49,18 @@ export default function TopManga() {
                 <Link
                   key={m.id}
                   to={`/manga/${m.id}`}
-                  className="group flex items-center gap-3 p-2.5 rounded-xl hover:bg-bg-tertiary transition-all"
+                  className="group flex items-center gap-2.5 p-2 rounded-lg hover:bg-bg-tertiary transition-colors"
                 >
-                  {/* Rank */}
-                  <div className={`shrink-0 w-8 h-8 rounded-lg border flex items-center justify-center text-xs font-bold ${getRankStyle(rank)}`}>
-                    {getRankIcon(rank) || rank}
-                  </div>
+                  {/* Rank number */}
+                  <span className={`shrink-0 w-6 text-center text-sm font-bold ${rank <= 3 ? 'text-accent' : 'text-text-muted'}`}>
+                    {rank}
+                  </span>
 
                   {/* Cover */}
                   <LazyImage
                     src={coverUrl}
                     alt={title}
-                    className="w-11 h-15 rounded-lg overflow-hidden shrink-0"
+                    className="w-9 h-13 rounded-md overflow-hidden shrink-0 bg-bg-tertiary"
                   />
 
                   {/* Info */}
@@ -85,15 +68,15 @@ export default function TopManga() {
                     <h3 className="text-sm font-medium text-text-primary line-clamp-1 group-hover:text-accent transition-colors">
                       {title}
                     </h3>
-                    <div className="flex items-center gap-3 mt-0.5">
+                    <div className="flex items-center gap-2.5 mt-0.5">
                       {rating && (
-                        <span className="flex items-center gap-1 text-xs text-text-muted">
+                        <span className="flex items-center gap-0.5 text-xs text-text-muted">
                           <Star size={10} className="text-warning fill-warning" />
                           {rating.toFixed(1)}
                         </span>
                       )}
                       {follows !== undefined && (
-                        <span className="flex items-center gap-1 text-xs text-text-muted">
+                        <span className="flex items-center gap-0.5 text-xs text-text-muted">
                           <Users size={10} />
                           {follows >= 1000 ? `${(follows / 1000).toFixed(1)}k` : follows}
                         </span>
@@ -101,9 +84,9 @@ export default function TopManga() {
                     </div>
                   </div>
 
-                  {/* Read button */}
-                  <button className="shrink-0 p-1.5 rounded-lg bg-accent/10 text-accent opacity-0 group-hover:opacity-100 transition-opacity">
-                    <BookOpen size={14} />
+                  {/* Read button on hover */}
+                  <button className="shrink-0 p-1 rounded-md text-accent opacity-0 group-hover:opacity-100 transition-opacity">
+                    <BookOpen size={13} />
                   </button>
                 </Link>
               );

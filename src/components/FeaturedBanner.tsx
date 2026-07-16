@@ -35,32 +35,32 @@ export default function FeaturedBanner() {
   const description = featured.attributes.description['en'] || Object.values(featured.attributes.description)[0] || '';
   const tags = featured.attributes.tags
     .filter(t => t.attributes.group === 'genre')
-    .slice(0, 4)
+    .slice(0, 3)
     .map(t => t.attributes.name['en'] || Object.values(t.attributes.name)[0]);
 
   const prev = () => setCurrent(c => (c - 1 + manga.length) % manga.length);
   const next = () => setCurrent(c => (c + 1) % manga.length);
 
   return (
-    <div className="relative w-full h-72 md:h-96 rounded-2xl overflow-hidden group">
-      {/* Background image */}
+    <div className="relative w-full h-64 md:h-[22rem] rounded-lg overflow-hidden group">
+      {/* Background */}
       <img
         src={coverUrl}
         alt=""
-        className="absolute inset-0 w-full h-full object-cover transition-all duration-700"
+        className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.02]"
         referrerPolicy="no-referrer"
       />
-      {/* Overlay gradient */}
-      <div className="absolute inset-0 bg-gradient-to-r from-bg-primary/95 via-bg-primary/70 to-transparent" />
-      <div className="absolute inset-0 bg-gradient-to-t from-bg-primary/80 via-transparent to-bg-primary/30" />
+      {/* Overlays */}
+      <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/60 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
 
       {/* Content */}
-      <div className="relative h-full flex flex-col justify-end p-6 md:p-10 max-w-2xl">
+      <div className="relative h-full flex flex-col justify-end p-6 md:p-10 max-w-xl">
         <div className="animate-fade-in" key={current}>
           {/* Tags */}
-          <div className="flex flex-wrap gap-2 mb-3">
+          <div className="flex flex-wrap gap-1.5 mb-3">
             {tags.map(tag => (
-              <span key={tag} className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-accent/20 text-accent border border-accent/30">
+              <span key={tag} className="px-2 py-0.5 rounded text-[11px] font-medium bg-white/10 text-white/80">
                 {tag}
               </span>
             ))}
@@ -72,36 +72,36 @@ export default function FeaturedBanner() {
           </h2>
 
           {/* Description */}
-          <p className="text-sm text-text-secondary leading-relaxed line-clamp-2 mb-5 max-w-lg">
-            {description.replace(/<[^>]*>/g, '').slice(0, 200)}
+          <p className="text-sm text-white/50 leading-relaxed line-clamp-2 mb-5 max-w-md">
+            {description.replace(/<[^>]*>/g, '').slice(0, 180)}
           </p>
 
-          {/* CTA */}
-          <div className="flex items-center gap-3">
+          {/* CTAs */}
+          <div className="flex items-center gap-2.5">
             <Link
               to={`/manga/${featured.id}`}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-accent hover:bg-accent-hover text-white font-semibold text-sm transition-all hover:shadow-glow"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-accent hover:bg-accent-hover text-white font-semibold text-sm transition-colors"
             >
-              <Play size={16} fill="currentColor" />
+              <Play size={14} fill="currentColor" />
               Start Reading
             </Link>
             <Link
               to={`/manga/${featured.id}`}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-medium text-sm transition-all backdrop-blur-sm"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-white/10 hover:bg-white/15 text-white font-medium text-sm transition-colors"
             >
-              More Info
+              Details
             </Link>
           </div>
         </div>
       </div>
 
-      {/* Navigation arrows */}
-      <div className="absolute right-4 top-1/2 -translate-y-1/2 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-        <button onClick={prev} className="p-2 rounded-full bg-black/50 hover:bg-black/70 text-white transition-colors backdrop-blur-sm">
-          <ChevronLeft size={18} />
+      {/* Nav arrows */}
+      <div className="absolute right-4 top-1/2 -translate-y-1/2 flex flex-col gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+        <button onClick={prev} className="p-2 rounded-lg bg-black/40 hover:bg-black/60 text-white transition-colors">
+          <ChevronLeft size={16} />
         </button>
-        <button onClick={next} className="p-2 rounded-full bg-black/50 hover:bg-black/70 text-white transition-colors backdrop-blur-sm">
-          <ChevronRight size={18} />
+        <button onClick={next} className="p-2 rounded-lg bg-black/40 hover:bg-black/60 text-white transition-colors">
+          <ChevronRight size={16} />
         </button>
       </div>
 
@@ -111,7 +111,7 @@ export default function FeaturedBanner() {
           <button
             key={i}
             onClick={() => setCurrent(i)}
-            className={`h-1.5 rounded-full transition-all ${i === current ? 'w-6 bg-accent' : 'w-1.5 bg-white/40 hover:bg-white/60'}`}
+            className={`h-1 rounded-full transition-all ${i === current ? 'w-5 bg-white' : 'w-1.5 bg-white/30'}`}
           />
         ))}
       </div>

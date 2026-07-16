@@ -49,13 +49,13 @@ export default function ChapterCard({ chapter, coverUrl }: ChapterCardProps) {
   };
 
   return (
-    <div className="group flex gap-4 p-4 rounded-xl bg-bg-secondary border border-transparent hover:border-border-hover hover:shadow-card transition-all duration-300 animate-fade-in">
+    <div className="group flex gap-3 p-3 rounded-lg bg-bg-secondary border border-border hover:border-border-hover transition-colors animate-fade-in">
       {/* Cover thumbnail */}
       <Link to={`/manga/${mangaId}`} className="shrink-0">
         <LazyImage
           src={coverUrl || ''}
           alt={mangaTitle}
-          className="w-16 h-22 md:w-18 md:h-25 rounded-lg overflow-hidden bg-bg-tertiary cursor-pointer hover:ring-2 hover:ring-accent/40 transition-all"
+          className="w-14 h-20 md:w-16 md:h-22 rounded-md overflow-hidden bg-bg-tertiary"
         />
       </Link>
 
@@ -65,7 +65,7 @@ export default function ChapterCard({ chapter, coverUrl }: ChapterCardProps) {
           <div className="min-w-0">
             <Link
               to={`/manga/${mangaId}`}
-              className="text-sm font-semibold text-text-primary hover:text-accent transition-colors line-clamp-1"
+              className="text-sm font-medium text-text-primary hover:text-accent transition-colors line-clamp-1"
             >
               {mangaTitle}
             </Link>
@@ -74,40 +74,39 @@ export default function ChapterCard({ chapter, coverUrl }: ChapterCardProps) {
               {chapterTitle && <span className="text-text-muted"> — {chapterTitle}</span>}
             </p>
           </div>
-          {/* Language badge */}
           <span className="shrink-0 text-sm" title={lang}>
             {getLanguageFlag(lang)}
           </span>
         </div>
 
         {/* Meta */}
-        <div className="flex items-center gap-3 mt-1.5 text-xs text-text-muted">
+        <div className="flex items-center gap-2 mt-1.5 text-xs text-text-muted">
           <span>{formatRelativeTime(publishAt)}</span>
-          <span>·</span>
+          <span className="w-0.5 h-0.5 rounded-full bg-text-muted/50" />
           <span className="truncate">{groupName}</span>
         </div>
 
         {/* Actions */}
-        <div className="flex items-center gap-2 mt-2.5">
+        <div className="flex items-center gap-1.5 mt-2">
           <Link
             to={`/read/${chapter.id}`}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-accent/10 hover:bg-accent/20 text-accent text-xs font-medium transition-colors"
+            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium text-accent hover:bg-accent/10 transition-colors"
           >
-            <BookOpen size={13} />
+            <BookOpen size={12} />
             Read
           </Link>
           <button
             onClick={handleReadLater}
-            className={`p-1.5 rounded-lg transition-colors ${inReadLater ? 'bg-accent-secondary/20 text-accent-secondary' : 'bg-bg-tertiary text-text-muted hover:text-text-primary hover:bg-bg-hover'}`}
+            className={`p-1 rounded-md transition-colors ${inReadLater ? 'text-accent bg-accent/10' : 'text-text-muted hover:text-text-primary hover:bg-bg-tertiary'}`}
             title={inReadLater ? 'Remove from Read Later' : 'Add to Read Later'}
           >
-            <ClockIcon size={14} />
+            <ClockIcon size={13} />
           </button>
           <button
-            className="p-1.5 rounded-lg bg-bg-tertiary text-text-muted hover:text-text-primary hover:bg-bg-hover transition-colors"
+            className="p-1 rounded-md text-text-muted hover:text-text-primary hover:bg-bg-tertiary transition-colors"
             title="Bookmark"
           >
-            <Bookmark size={14} />
+            <Bookmark size={13} />
           </button>
         </div>
       </div>

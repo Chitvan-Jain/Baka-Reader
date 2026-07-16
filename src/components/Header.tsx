@@ -1,21 +1,23 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Library, List, User, LogIn, Menu, X, BookOpen } from 'lucide-react';
+import { Home, Library, List, LogIn, Menu, X, BookOpen, Sun, Moon } from 'lucide-react';
 import SearchBar from './SearchBar';
 import LoginModal from './LoginModal';
 import { useAuth } from '../contexts/AuthContext';
+import { useTheme } from '../contexts/ThemeContext';
 
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [loginModalOpen, setLoginModalOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const { user, isAuthenticated, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const location = useLocation();
 
   const navLinks = [
     { to: '/', label: 'Home', icon: Home },
     { to: '/library', label: 'Library', icon: Library },
-    { to: '/lists', label: 'Reading Lists', icon: List },
+    { to: '/lists', label: 'Lists', icon: List },
   ];
 
   const isActive = (path: string) => location.pathname === path;
@@ -23,29 +25,22 @@ export default function Header() {
   return (
     <>
       <header className="sticky top-0 z-40 glass border-b border-glass-border">
-        <div className="max-w-full mx-auto px-4 md:px-6">
-          <div className="flex items-center justify-between h-16 md:h-18">
+        <div className="site-container">
+          <div className="flex items-center justify-between h-14">
             {/* Logo */}
-            <Link to="/" className="flex items-center gap-2.5 shrink-0 group">
-              <div className="relative">
-                <BookOpen size={28} className="text-accent group-hover:drop-shadow-[0_0_8px_rgba(255,107,107,0.5)] transition-all" />
-              </div>
-              <div className="flex flex-col">
-                <span className="text-lg font-bold tracking-tight text-text-primary leading-none">
-                  Baka<span className="text-accent">Reader</span>
-                </span>
-                <span className="text-[9px] font-medium text-text-muted tracking-widest uppercase leading-none mt-0.5 hidden sm:block">
-                  マンガリーダー
-                </span>
-              </div>
+            <Link to="/" className="flex items-center gap-2 shrink-0">
+              <BookOpen size={24} className="text-accent" />
+              <span className="text-base font-semibold text-text-primary tracking-tight">
+                BakaReader
+              </span>
             </Link>
 
-            {/* Search Bar (desktop) */}
-            <div className="hidden md:flex flex-1 max-w-lg mx-8">
+            {/* Search (desktop) */}
+            <div className="hidden md:flex flex-1 max-w-md mx-6">
               <SearchBar />
             </div>
 
-            {/* Nav Links (desktop) */}
+            {/* Nav (desktop) */}
             <nav className="hidden md:flex items-center gap-1">
               {navLinks.map(link => {
                 const Icon = link.icon;
@@ -53,42 +48,51 @@ export default function Header() {
                   <Link
                     key={link.to}
                     to={link.to}
-                    className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-medium transition-all ${
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                       isActive(link.to)
                         ? 'bg-accent/10 text-accent'
                         : 'text-text-secondary hover:text-text-primary hover:bg-bg-tertiary'
                     }`}
                   >
-                    <Icon size={16} />
-                    <span>{link.label}</span>
+                    <Icon size={15} />
+                    {link.label}
                   </Link>
                 );
               })}
             </nav>
 
-            {/* Right Section */}
-            <div className="flex items-center gap-2 ml-4">
+            {/* Right actions */}
+            <div className="flex items-center gap-1.5 ml-3">
+              {/* Theme toggle */}
+              <button
+                onClick={toggleTheme}
+                className="p-2 rounded-lg text-text-secondary hover:text-text-primary hover:bg-bg-tertiary transition-colors"
+                title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+              >
+                {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+              </button>
+
               {isAuthenticated && user ? (
                 <div className="relative">
                   <button
                     onClick={() => setProfileMenuOpen(!profileMenuOpen)}
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-bg-tertiary hover:bg-bg-hover transition-colors"
+                    className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-bg-tertiary transition-colors"
                   >
-                    <div className="w-7 h-7 rounded-full bg-gradient-to-br from-accent to-accent-secondary flex items-center justify-center">
-                      <span className="text-xs font-bold text-white">{user.username[0].toUpperCase()}</span>
+                    <div className="w-6 h-6 rounded-full bg-accent flex items-center justify-center">
+                      <span className="text-[11px] font-semibold text-white">{user.username[0].toUpperCase()}</span>
                     </div>
                     <span className="text-sm font-medium text-text-primary hidden lg:block">{user.username}</span>
                   </button>
 
                   {profileMenuOpen && (
-                    <div className="absolute right-0 top-full mt-2 w-48 bg-bg-secondary border border-border rounded-xl shadow-card overflow-hidden animate-scale-in">
-                      <div className="px-4 py-3 border-b border-border">
+                    <div className="absolute right-0 top-full mt-1.5 w-44 bg-bg-secondary border border-border rounded-lg shadow-lg overflow-hidden animate-scale-in">
+                      <div className="px-3.5 py-2.5 border-b border-border">
                         <p className="text-sm font-medium text-text-primary">{user.username}</p>
-                        <p className="text-xs text-text-muted">MangaDex Account</p>
+                        <p className="text-xs text-text-muted">Account</p>
                       </div>
                       <button
                         onClick={() => { logout(); setProfileMenuOpen(false); }}
-                        className="w-full px-4 py-2.5 text-left text-sm text-error hover:bg-bg-tertiary transition-colors"
+                        className="w-full px-3.5 py-2 text-left text-sm text-error hover:bg-bg-tertiary transition-colors"
                       >
                         Sign Out
                       </button>
@@ -98,33 +102,33 @@ export default function Header() {
               ) : (
                 <button
                   onClick={() => setLoginModalOpen(true)}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-accent hover:bg-accent-hover text-white text-sm font-semibold transition-all hover:shadow-glow"
+                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-accent hover:bg-accent-hover text-white text-sm font-medium transition-colors"
                 >
-                  <LogIn size={16} />
+                  <LogIn size={14} />
                   <span className="hidden sm:inline">Login</span>
                 </button>
               )}
 
-              {/* Mobile menu button */}
+              {/* Mobile menu toggle */}
               <button
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="md:hidden p-2 rounded-xl text-text-secondary hover:text-text-primary hover:bg-bg-tertiary transition-colors"
+                className="md:hidden p-2 rounded-lg text-text-secondary hover:text-text-primary hover:bg-bg-tertiary transition-colors"
               >
-                {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
+                {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
               </button>
             </div>
           </div>
 
-          {/* Mobile Search */}
-          <div className="md:hidden pb-3">
+          {/* Mobile search */}
+          <div className="md:hidden pb-2.5">
             <SearchBar />
           </div>
         </div>
 
-        {/* Mobile Navigation */}
+        {/* Mobile nav */}
         {mobileMenuOpen && (
           <div className="md:hidden border-t border-border bg-bg-secondary animate-slide-down">
-            <nav className="px-4 py-3 space-y-1">
+            <nav className="px-4 py-2 space-y-0.5">
               {navLinks.map(link => {
                 const Icon = link.icon;
                 return (
@@ -132,14 +136,14 @@ export default function Header() {
                     key={link.to}
                     to={link.to}
                     onClick={() => setMobileMenuOpen(false)}
-                    className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
+                    className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                       isActive(link.to)
                         ? 'bg-accent/10 text-accent'
                         : 'text-text-secondary hover:text-text-primary hover:bg-bg-tertiary'
                     }`}
                   >
-                    <Icon size={18} />
-                    <span>{link.label}</span>
+                    <Icon size={16} />
+                    {link.label}
                   </Link>
                 );
               })}

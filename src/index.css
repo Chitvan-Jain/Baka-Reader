@@ -1,106 +1,104 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Noto+Sans+JP:wght@300;400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 @import "tailwindcss";
 
-/* ─── Theme Tokens ──────────────────────────────────────────────── */
+/* ─── Design Tokens ─────────────────────────────────────────────── */
 @theme {
-  --color-bg-primary: #0f0f14;
-  --color-bg-secondary: #16161e;
-  --color-bg-tertiary: #1e1e2a;
-  --color-bg-elevated: #232333;
-  --color-bg-hover: #282840;
+  /* Surface colors (dark-first, overridden by .light) */
+  --color-bg-primary: #09090b;
+  --color-bg-secondary: #111113;
+  --color-bg-tertiary: #1a1a1f;
+  --color-bg-elevated: #222228;
+  --color-bg-hover: #2a2a32;
 
-  --color-accent: #ff6b6b;
-  --color-accent-hover: #ff5252;
-  --color-accent-secondary: #c084fc;
-  --color-accent-tertiary: #60a5fa;
+  /* Single accent */
+  --color-accent: #6366f1;
+  --color-accent-hover: #4f46e5;
 
-  --color-text-primary: #e8e8ed;
-  --color-text-secondary: #9ca3af;
-  --color-text-muted: #6b7280;
-  --color-text-accent: #ff6b6b;
+  /* Text */
+  --color-text-primary: #fafafa;
+  --color-text-secondary: #a1a1aa;
+  --color-text-muted: #52525b;
 
-  --color-border: #2a2a3a;
-  --color-border-hover: #3d3d55;
+  /* Borders */
+  --color-border: #1e1e24;
+  --color-border-hover: #2e2e38;
 
-  --color-success: #4ade80;
-  --color-warning: #fbbf24;
-  --color-error: #f87171;
-  --color-info: #60a5fa;
+  /* Semantic */
+  --color-success: #22c55e;
+  --color-warning: #eab308;
+  --color-error: #ef4444;
+  --color-info: #3b82f6;
 
-  --color-gold: #fbbf24;
-  --color-silver: #94a3b8;
-  --color-bronze: #d97706;
-
-  --color-glass: rgba(22, 22, 30, 0.8);
+  /* Glass */
+  --color-glass: rgba(9, 9, 11, 0.85);
   --color-glass-border: rgba(255, 255, 255, 0.06);
 
-  --font-sans: 'Inter', 'Noto Sans JP', system-ui, -apple-system, sans-serif;
+  /* Typography */
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
 
-  --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.4);
-  --shadow-card-hover: 0 8px 32px rgba(0, 0, 0, 0.5);
-  --shadow-glow: 0 0 20px rgba(255, 107, 107, 0.15);
-  --shadow-glow-purple: 0 0 20px rgba(192, 132, 252, 0.15);
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.2);
+  --shadow-lg: 0 4px 12px rgba(0, 0, 0, 0.3);
 
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
-  --radius-xl: 20px;
-
-  --animate-fade-in: fade-in 0.4s ease-out;
-  --animate-slide-up: slide-up 0.5s ease-out;
-  --animate-slide-down: slide-down 0.3s ease-out;
-  --animate-shimmer: shimmer 2s infinite;
-  --animate-pulse-glow: pulse-glow 2s ease-in-out infinite;
-  --animate-float: float 3s ease-in-out infinite;
+  /* Animations */
+  --animate-fade-in: fade-in 0.35s ease-out;
+  --animate-slide-up: slide-up 0.4s ease-out;
+  --animate-slide-down: slide-down 0.25s ease-out;
   --animate-scale-in: scale-in 0.2s ease-out;
+  --animate-shimmer: shimmer 2s infinite;
+}
+
+/* ─── Light Theme Override ──────────────────────────────────────── */
+.light {
+  --color-bg-primary: #ffffff;
+  --color-bg-secondary: #f5f5f7;
+  --color-bg-tertiary: #ebebef;
+  --color-bg-elevated: #e0e0e5;
+  --color-bg-hover: #d8d8de;
+
+  --color-text-primary: #09090b;
+  --color-text-secondary: #52525b;
+  --color-text-muted: #a1a1aa;
+
+  --color-border: #e4e4e7;
+  --color-border-hover: #d4d4d8;
+
+  --color-glass: rgba(255, 255, 255, 0.9);
+  --color-glass-border: rgba(0, 0, 0, 0.06);
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 /* ─── Keyframes ─────────────────────────────────────────────────── */
 @keyframes fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
 }
-
 @keyframes slide-up {
-  from { opacity: 0; transform: translateY(20px); }
+  from { opacity: 0; transform: translateY(12px); }
   to { opacity: 1; transform: translateY(0); }
 }
-
 @keyframes slide-down {
-  from { opacity: 0; transform: translateY(-10px); }
+  from { opacity: 0; transform: translateY(-8px); }
   to { opacity: 1; transform: translateY(0); }
 }
-
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
 @keyframes shimmer {
   0% { background-position: -200% 0; }
   100% { background-position: 200% 0; }
 }
-
-@keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 5px rgba(255, 107, 107, 0.2); }
-  50% { box-shadow: 0 0 20px rgba(255, 107, 107, 0.4); }
-}
-
-@keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-6px); }
-}
-
-@keyframes scale-in {
-  from { opacity: 0; transform: scale(0.95); }
-  to { opacity: 1; transform: scale(1); }
-}
-
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
 
-/* ─── Base Styles ───────────────────────────────────────────────── */
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
+/* ─── Base ──────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 html {
   scroll-behavior: smooth;
@@ -114,99 +112,54 @@ body {
   color: var(--color-text-primary);
   line-height: 1.6;
   overflow-x: hidden;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
-/* ─── Scrollbar Styling ─────────────────────────────────────────── */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+/* ─── Container ─────────────────────────────────────────────────── */
+.site-container {
+  width: 100%;
+  max-width: 1400px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1.25rem;
+  padding-right: 1.25rem;
+}
+@media (min-width: 768px) {
+  .site-container {
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
 }
 
-::-webkit-scrollbar-track {
-  background: var(--color-bg-secondary);
-}
+/* ─── Scrollbar ─────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--color-border-hover); border-radius: 8px; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-text-muted); }
+* { scrollbar-width: thin; scrollbar-color: var(--color-border-hover) transparent; }
 
-::-webkit-scrollbar-thumb {
-  background: var(--color-border);
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: var(--color-border-hover);
-}
-
-/* Firefox scrollbar */
-* {
-  scrollbar-width: thin;
-  scrollbar-color: var(--color-border) var(--color-bg-secondary);
-}
-
-/* ─── Japanese Decorative Elements ──────────────────────────────── */
-.japanese-pattern {
-  background-image: 
-    radial-gradient(circle at 25% 25%, rgba(255, 107, 107, 0.03) 0%, transparent 50%),
-    radial-gradient(circle at 75% 75%, rgba(192, 132, 252, 0.03) 0%, transparent 50%);
-}
-
-.manga-dots {
-  background-image: radial-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-  background-size: 20px 20px;
-}
-
-/* ─── Glassmorphism ─────────────────────────────────────────────── */
+/* ─── Glass ─────────────────────────────────────────────────────── */
 .glass {
   background: var(--color-glass);
-  backdrop-filter: blur(16px) saturate(180%);
-  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  backdrop-filter: blur(16px) saturate(150%);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
   border: 1px solid var(--color-glass-border);
 }
 
-/* ─── Utility: Hide Scrollbar ───────────────────────────────────── */
-.hide-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-.hide-scrollbar::-webkit-scrollbar {
-  display: none;
-}
+/* ─── Utilities ─────────────────────────────────────────────────── */
+.hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+.hide-scrollbar::-webkit-scrollbar { display: none; }
 
-/* ─── Skeleton Shimmer ──────────────────────────────────────────── */
 .skeleton-shimmer {
-  background: linear-gradient(
-    90deg,
-    var(--color-bg-tertiary) 25%,
-    var(--color-bg-elevated) 50%,
-    var(--color-bg-tertiary) 75%
-  );
+  background: linear-gradient(90deg, var(--color-bg-tertiary) 25%, var(--color-bg-elevated) 50%, var(--color-bg-tertiary) 75%);
   background-size: 400% 100%;
   animation: shimmer 2s infinite;
 }
 
-/* ─── Focus Styles ──────────────────────────────────────────────── */
-:focus-visible {
-  outline: 2px solid var(--color-accent);
-  outline-offset: 2px;
-}
+/* ─── Focus & Selection ─────────────────────────────────────────── */
+:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+::selection { background: rgba(99, 102, 241, 0.25); color: inherit; }
 
-button:focus-visible,
-a:focus-visible {
-  outline: 2px solid var(--color-accent);
-  outline-offset: 2px;
-  border-radius: var(--radius-sm);
-}
-
-/* ─── Selection ─────────────────────────────────────────────────── */
-::selection {
-  background: rgba(255, 107, 107, 0.3);
-  color: white;
-}
-
-/* ─── Smooth transitions for interactive elements ───────────────── */
-a, button {
-  transition: all 0.2s ease;
-}
-
-img {
-  max-width: 100%;
-  height: auto;
-}
+/* ─── Base Transitions ──────────────────────────────────────────── */
+a, button { transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease, opacity 0.15s ease; }
+img { max-width: 100%; height: auto; }

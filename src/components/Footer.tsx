@@ -3,36 +3,32 @@ import { BookOpen, Heart, ExternalLink } from 'lucide-react';
 
 export default function Footer() {
   return (
-    <footer className="border-t border-border bg-bg-secondary mt-16">
-      <div className="max-w-full mx-auto px-4 md:px-6">
-        {/* Main footer */}
-        <div className="py-12 grid grid-cols-1 md:grid-cols-4 gap-8">
+    <footer className="border-t border-border bg-bg-secondary/50 mt-12">
+      <div className="site-container">
+        <div className="py-10 grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Brand */}
           <div className="md:col-span-1">
-            <Link to="/" className="flex items-center gap-2.5 mb-4 group">
-              <BookOpen size={24} className="text-accent" />
-              <span className="text-lg font-bold text-text-primary">
-                Baka<span className="text-accent">Reader</span>
-              </span>
+            <Link to="/" className="flex items-center gap-2 mb-3">
+              <BookOpen size={20} className="text-accent" />
+              <span className="text-base font-semibold text-text-primary">BakaReader</span>
             </Link>
-            <p className="text-sm text-text-secondary leading-relaxed mb-4">
-              Read your favorite manga seamlessly, anytime, anywhere. Powered by MangaDex API.
+            <p className="text-sm text-text-secondary leading-relaxed">
+              Read your favorite manga seamlessly. Powered by MangaDex API.
             </p>
-            <p className="text-xs text-text-muted">マンガリーダー · 漫画を読む</p>
           </div>
 
           {/* Quick Links */}
           <div>
-            <h3 className="text-sm font-semibold text-text-primary mb-4">Quick Links</h3>
-            <ul className="space-y-2.5">
+            <h3 className="text-sm font-semibold text-text-primary mb-3">Links</h3>
+            <ul className="space-y-2">
               {[
                 { to: '/', label: 'Home' },
-                { to: '/library', label: 'My Library' },
+                { to: '/library', label: 'Library' },
                 { to: '/lists', label: 'Reading Lists' },
-                { to: '/search', label: 'Browse Manga' },
+                { to: '/search', label: 'Browse' },
               ].map(link => (
                 <li key={link.to}>
-                  <Link to={link.to} className="text-sm text-text-secondary hover:text-accent transition-colors">
+                  <Link to={link.to} className="text-sm text-text-secondary hover:text-text-primary transition-colors">
                     {link.label}
                   </Link>
                 </li>
@@ -42,10 +38,10 @@ export default function Footer() {
 
           {/* Resources */}
           <div>
-            <h3 className="text-sm font-semibold text-text-primary mb-4">Resources</h3>
-            <ul className="space-y-2.5">
+            <h3 className="text-sm font-semibold text-text-primary mb-3">Resources</h3>
+            <ul className="space-y-2">
               {[
-                { href: 'https://api.mangadex.org/docs/', label: 'API Documentation', external: true },
+                { href: 'https://api.mangadex.org/docs/', label: 'API Docs', external: true },
                 { href: 'https://mangadex.org', label: 'MangaDex', external: true },
                 { href: 'https://status.mangadex.org', label: 'API Status', external: true },
               ].map(link => (
@@ -54,10 +50,10 @@ export default function Footer() {
                     href={link.href}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-sm text-text-secondary hover:text-accent transition-colors inline-flex items-center gap-1"
+                    className="text-sm text-text-secondary hover:text-text-primary transition-colors inline-flex items-center gap-1"
                   >
                     {link.label}
-                    {link.external && <ExternalLink size={11} />}
+                    {link.external && <ExternalLink size={10} />}
                   </a>
                 </li>
               ))}
@@ -66,11 +62,11 @@ export default function Footer() {
 
           {/* Legal */}
           <div>
-            <h3 className="text-sm font-semibold text-text-primary mb-4">Legal</h3>
-            <ul className="space-y-2.5">
-              {['About', 'Privacy Policy', 'Terms of Use', 'Contact'].map(label => (
+            <h3 className="text-sm font-semibold text-text-primary mb-3">Legal</h3>
+            <ul className="space-y-2">
+              {['About', 'Privacy', 'Terms', 'Contact'].map(label => (
                 <li key={label}>
-                  <a href="#" className="text-sm text-text-secondary hover:text-accent transition-colors">
+                  <a href="#" className="text-sm text-text-secondary hover:text-text-primary transition-colors">
                     {label}
                   </a>
                 </li>
@@ -79,23 +75,19 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* Bottom bar */}
-        <div className="py-5 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-3">
+        {/* Bottom */}
+        <div className="py-4 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-2">
           <p className="text-xs text-text-muted">
-            © {new Date().getFullYear()} Baka Reader. All manga data provided by{' '}
-            <a href="https://mangadex.org" target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">
+            © {new Date().getFullYear()} BakaReader. Data by{' '}
+            <a href="https://mangadex.org" target="_blank" rel="noopener noreferrer" className="text-text-secondary hover:text-text-primary">
               MangaDex
             </a>
-            .
           </p>
           <p className="text-xs text-text-muted flex items-center gap-1">
-            Made with <Heart size={12} className="text-accent" /> for manga readers
+            Made with <Heart size={10} className="text-accent" /> for manga readers
           </p>
         </div>
       </div>
-
-      {/* Japanese decorative line */}
-      <div className="h-1 bg-gradient-to-r from-accent via-accent-secondary to-accent-tertiary opacity-50" />
     </footer>
   );
 }

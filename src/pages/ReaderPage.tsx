@@ -40,9 +40,21 @@ export default function ReaderPage() {
 
     getChapterPages(chapterId)
       .then(res => {
-        const urls = res.chapter.data.map(file =>
-          buildChapterImageUrl(res.baseUrl, res.chapter.hash, file, false)
-        );
+        // Try full quality first, fall back to data-saver
+        let urls: string[];
+        if (res.chapter.data.length > 0) {
+          urls = res.chapter.data.map(file =>
+            buildChapterImageUrl(res.baseUrl, res.chapter.hash, file, false)
+          );
+        } else if (res.chapter.dataSaver && res.chapter.dataSaver.length > 0) {
+          urls = res.chapter.dataSaver.map(file =>
+            buildChapterImageUrl(res.baseUrl, res.chapter.hash, file, true)
+          );
+        } else {
+          setError('No pages available for this chapter. The chapter may have been removed or is not available through the MangaDex@Home network.');
+          setLoading(false);
+          return;
+        }
         setPages(urls);
         setLoading(false);
 
