@@ -6,6 +6,8 @@ import type {
   ReadingHistoryEntry,
   ReaderSettings,
 } from '../types';
+import * as firestore from './firestore';
+import type { UserData } from './firestore';
 
 const KEYS = {
   READING_PROGRESS: 'baka_reading_progress',
@@ -17,6 +19,20 @@ const KEYS = {
   READER_SETTINGS: 'baka_reader_settings',
   RECENT_SEARCHES: 'baka_recent_searches',
 } as const;
+
+// ─── Current user UID (set by AuthContext on login/logout) ─────────
+
+let _currentUid: string | null = null;
+
+export function setCurrentUser(uid: string | null): void {
+  _currentUid = uid;
+}
+
+export function getCurrentUid(): string | null {
+  return _currentUid;
+}
+
+// ─── localStorage helpers ──────────────────────────────────────────
 
 function getItem<T>(key: string, fallback: T): T {
   try {
@@ -35,12 +51,109 @@ function setItem<T>(key: string, value: T): void {
   }
 }
 
+// ─── Firestore sync (fire-and-forget for writes) ───────────────────
+
+function syncField(field: keyof UserData, value: any): void {
+  if (!_currentUid) return;
+  firestore.setUserData(_currentUid, { [field]: value }).catch(() => {});
+}
+
+/**
+ * Called once on login: pulls Firestore data, merges with localStorage,
+ * writes merged result back to both.
+ */
+export async function mergeOnLogin(uid: string): Promise<void> {
+  setCurrentUser(uid);
+
+  const remote = await firestore.getUserData(uid);
+
+  // Merge favorites (union by mangaId, keep latest)
+  const localFavs = getItem<FavoriteItem[]>(KEYS.FAVORITES, []);
+  const mergedFavs = mergeById(localFavs, remote.favorites, 'mangaId');
+  setItem(KEYS.FAVORITES, mergedFavs);
+
+  // Merge read-later
+  const localRL = getItem<ReadLaterItem[]>(KEYS.READ_LATER, []);
+  const mergedRL = mergeById(localRL, remote.readLater, 'mangaId');
+  setItem(KEYS.READ_LATER, mergedRL);
+
+  // Merge reading progress (latest timestamp wins per mangaId)
+  const localProgress = getItem<Record<string, ReadingProgress>>(KEYS.READING_PROGRESS, {});
+  const mergedProgress = { ...remote.readingProgress };
+  for (const [id, prog] of Object.entries(localProgress)) {
+    if (!mergedProgress[id] || prog.timestamp > mergedProgress[id].timestamp) {
+      mergedProgress[id] = prog;
+    }
+  }
+  setItem(KEYS.READING_PROGRESS, mergedProgress);
+
+  // Merge reading history (union by mangaId, latest first, cap at 100)
+  const localHistory = getItem<ReadingHistoryEntry[]>(KEYS.READING_HISTORY, []);
+  const mergedHistory = mergeById(localHistory, remote.readingHistory, 'mangaId')
+    .sort((a, b) => b.timestamp - a.timestamp)
+    .slice(0, 100);
+  setItem(KEYS.READING_HISTORY, mergedHistory);
+
+  // Merge read chapters (union)
+  const localReadCh = getItem<Record<string, boolean>>(KEYS.READ_CHAPTERS, {});
+  const remoteReadChSet = new Set(remote.readChapters);
+  for (const id of Object.keys(localReadCh)) {
+    remoteReadChSet.add(id);
+  }
+  const mergedReadCh: Record<string, boolean> = {};
+  for (const id of remoteReadChSet) {
+    mergedReadCh[id] = true;
+  }
+  setItem(KEYS.READ_CHAPTERS, mergedReadCh);
+
+  // Merge reading lists (union by id)
+  const localLists = getItem<ReadingList[]>(KEYS.READING_LISTS, []);
+  const mergedLists = mergeById(localLists, remote.readingLists, 'id');
+  setItem(KEYS.READING_LISTS, mergedLists);
+
+  // Reader settings: remote wins if exists
+  if (remote.readerSettings) {
+    setItem(KEYS.READER_SETTINGS, remote.readerSettings);
+  }
+
+  // Push merged data back to Firestore
+  await firestore.setUserData(uid, {
+    favorites: mergedFavs,
+    readLater: mergedRL,
+    readingProgress: mergedProgress,
+    readingHistory: mergedHistory,
+    readChapters: [...remoteReadChSet],
+    readingLists: mergedLists,
+    readerSettings: getItem<ReaderSettings>(KEYS.READER_SETTINGS, null as any),
+  });
+}
+
+/** Merge two arrays by a key field. Local items with newer timestamps win. */
+function mergeById<T extends Record<string, any>>(local: T[], remote: T[], key: string): T[] {
+  const map = new Map<string, T>();
+  for (const item of remote) {
+    map.set(item[key], item);
+  }
+  for (const item of local) {
+    const existing = map.get(item[key]);
+    if (!existing) {
+      map.set(item[key], item);
+    } else if (item.timestamp && existing.timestamp && item.timestamp > existing.timestamp) {
+      map.set(item[key], item);
+    } else if (item.addedAt && existing.addedAt && item.addedAt > existing.addedAt) {
+      map.set(item[key], item);
+    }
+  }
+  return [...map.values()];
+}
+
 // ─── Reading Progress ──────────────────────────────────────────────
 
 export function saveReadingProgress(progress: ReadingProgress): void {
   const all = getItem<Record<string, ReadingProgress>>(KEYS.READING_PROGRESS, {});
   all[progress.mangaId] = { ...progress, timestamp: Date.now() };
   setItem(KEYS.READING_PROGRESS, all);
+  syncField('readingProgress', all);
 }
 
 export function getReadingProgress(mangaId: string): ReadingProgress | null {
@@ -57,6 +170,7 @@ export function removeReadingProgress(mangaId: string): void {
   const all = getItem<Record<string, ReadingProgress>>(KEYS.READING_PROGRESS, {});
   delete all[mangaId];
   setItem(KEYS.READING_PROGRESS, all);
+  syncField('readingProgress', all);
 }
 
 // ─── Read Later ────────────────────────────────────────────────────
@@ -66,12 +180,15 @@ export function addToReadLater(item: ReadLaterItem): void {
   if (!list.find(i => i.mangaId === item.mangaId)) {
     list.unshift({ ...item, addedAt: Date.now() });
     setItem(KEYS.READ_LATER, list);
+    syncField('readLater', list);
   }
 }
 
 export function removeFromReadLater(mangaId: string): void {
   const list = getItem<ReadLaterItem[]>(KEYS.READ_LATER, []);
-  setItem(KEYS.READ_LATER, list.filter(i => i.mangaId !== mangaId));
+  const updated = list.filter(i => i.mangaId !== mangaId);
+  setItem(KEYS.READ_LATER, updated);
+  syncField('readLater', updated);
 }
 
 export function getReadLaterList(): ReadLaterItem[] {
@@ -89,12 +206,15 @@ export function addToFavorites(item: FavoriteItem): void {
   if (!list.find(i => i.mangaId === item.mangaId)) {
     list.unshift({ ...item, addedAt: Date.now() });
     setItem(KEYS.FAVORITES, list);
+    syncField('favorites', list);
   }
 }
 
 export function removeFromFavorites(mangaId: string): void {
   const list = getItem<FavoriteItem[]>(KEYS.FAVORITES, []);
-  setItem(KEYS.FAVORITES, list.filter(i => i.mangaId !== mangaId));
+  const updated = list.filter(i => i.mangaId !== mangaId);
+  setItem(KEYS.FAVORITES, updated);
+  syncField('favorites', updated);
 }
 
 export function getFavoritesList(): FavoriteItem[] {
@@ -119,6 +239,7 @@ export function createReadingList(name: string, description = ''): ReadingList {
   };
   lists.push(newList);
   setItem(KEYS.READING_LISTS, lists);
+  syncField('readingLists', lists);
   return newList;
 }
 
@@ -132,12 +253,15 @@ export function updateReadingList(id: string, updates: Partial<ReadingList>): vo
   if (index !== -1) {
     lists[index] = { ...lists[index], ...updates, updatedAt: Date.now() };
     setItem(KEYS.READING_LISTS, lists);
+    syncField('readingLists', lists);
   }
 }
 
 export function deleteReadingList(id: string): void {
   const lists = getItem<ReadingList[]>(KEYS.READING_LISTS, []);
-  setItem(KEYS.READING_LISTS, lists.filter(l => l.id !== id));
+  const updated = lists.filter(l => l.id !== id);
+  setItem(KEYS.READING_LISTS, updated);
+  syncField('readingLists', updated);
 }
 
 export function addMangaToList(listId: string, mangaId: string): void {
@@ -147,6 +271,7 @@ export function addMangaToList(listId: string, mangaId: string): void {
     list.mangaIds.push(mangaId);
     list.updatedAt = Date.now();
     setItem(KEYS.READING_LISTS, lists);
+    syncField('readingLists', lists);
   }
 }
 
@@ -157,6 +282,7 @@ export function removeMangaFromList(listId: string, mangaId: string): void {
     list.mangaIds = list.mangaIds.filter(id => id !== mangaId);
     list.updatedAt = Date.now();
     setItem(KEYS.READING_LISTS, lists);
+    syncField('readingLists', lists);
   }
 }
 
@@ -164,11 +290,11 @@ export function removeMangaFromList(listId: string, mangaId: string): void {
 
 export function addToHistory(entry: ReadingHistoryEntry): void {
   const history = getItem<ReadingHistoryEntry[]>(KEYS.READING_HISTORY, []);
-  // Remove existing entry for same manga to avoid duplicates
   const filtered = history.filter(h => h.mangaId !== entry.mangaId);
   filtered.unshift({ ...entry, timestamp: Date.now() });
-  // Keep only last 100 entries
-  setItem(KEYS.READING_HISTORY, filtered.slice(0, 100));
+  const capped = filtered.slice(0, 100);
+  setItem(KEYS.READING_HISTORY, capped);
+  syncField('readingHistory', capped);
 }
 
 export function getReadingHistory(): ReadingHistoryEntry[] {
@@ -177,6 +303,7 @@ export function getReadingHistory(): ReadingHistoryEntry[] {
 
 export function clearReadingHistory(): void {
   setItem(KEYS.READING_HISTORY, []);
+  syncField('readingHistory', []);
 }
 
 // ─── Read Chapters ─────────────────────────────────────────────────
@@ -185,12 +312,14 @@ export function markChapterRead(chapterId: string): void {
   const chapters = getItem<Record<string, boolean>>(KEYS.READ_CHAPTERS, {});
   chapters[chapterId] = true;
   setItem(KEYS.READ_CHAPTERS, chapters);
+  syncField('readChapters', Object.keys(chapters));
 }
 
 export function markChapterUnread(chapterId: string): void {
   const chapters = getItem<Record<string, boolean>>(KEYS.READ_CHAPTERS, {});
   delete chapters[chapterId];
   setItem(KEYS.READ_CHAPTERS, chapters);
+  syncField('readChapters', Object.keys(chapters));
 }
 
 export function isChapterRead(chapterId: string): boolean {
@@ -218,10 +347,12 @@ export function getReaderSettings(): ReaderSettings {
 
 export function saveReaderSettings(settings: Partial<ReaderSettings>): void {
   const current = getReaderSettings();
-  setItem(KEYS.READER_SETTINGS, { ...current, ...settings });
+  const merged = { ...current, ...settings };
+  setItem(KEYS.READER_SETTINGS, merged);
+  syncField('readerSettings', merged);
 }
 
-// ─── Recent Searches ───────────────────────────────────────────────
+// ─── Recent Searches (local-only, no sync) ─────────────────────────
 
 export function addRecentSearch(query: string): void {
   const searches = getItem<string[]>(KEYS.RECENT_SEARCHES, []);

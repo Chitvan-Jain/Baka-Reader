@@ -1,7 +1,9 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { AuthProvider } from './contexts/AuthContext';
+import { useEffect } from 'react';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { ToastProvider } from './components/ui/Toast';
+import { mergeOnLogin, setCurrentUser } from './services/storage';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import HomePage from './pages/HomePage';
@@ -21,12 +23,30 @@ function AppLayout({ children }: { children: React.ReactNode }) {
   );
 }
 
+/** Syncs storage with Firestore when auth state changes */
+function FirestoreSync() {
+  const { firebaseUser } = useAuth();
+
+  useEffect(() => {
+    if (firebaseUser) {
+      mergeOnLogin(firebaseUser.uid).catch(err => {
+        console.error('[FirestoreSync] Merge failed:', err);
+      });
+    } else {
+      setCurrentUser(null);
+    }
+  }, [firebaseUser]);
+
+  return null;
+}
+
 export default function App() {
   return (
     <BrowserRouter>
       <ThemeProvider>
         <AuthProvider>
           <ToastProvider>
+            <FirestoreSync />
             <Routes>
               {/* Reader is fullscreen, no layout */}
               <Route path="/read/:chapterId" element={<ReaderPage />} />

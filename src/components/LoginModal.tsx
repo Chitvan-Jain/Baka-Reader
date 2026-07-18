@@ -28,9 +28,9 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!username.trim() || !password.trim()) return;
+    if (!email.trim() || !password.trim()) return;
     try {
-      await login(username.trim(), password);
+      await login(email.trim(), password);
       onClose();
       resetFields();
     } catch {
@@ -132,12 +132,12 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
           {tab === 'login' && (
             <form onSubmit={handleLogin} className="space-y-4">
               <div>
-                <label className="block text-xs font-medium text-text-secondary mb-1.5 uppercase tracking-wider">Username</label>
+                <label className="block text-xs font-medium text-text-secondary mb-1.5 uppercase tracking-wider">Email</label>
                 <input
-                  type="text"
-                  value={username}
-                  onChange={e => setUsername(e.target.value)}
-                  placeholder="Enter your username"
+                  type="email"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  placeholder="you@example.com"
                   className="w-full px-4 py-3 bg-bg-tertiary border border-border rounded-xl text-sm text-text-primary placeholder-text-muted focus:outline-none focus:border-accent/50 focus:ring-2 focus:ring-accent/15 transition-all"
                   autoFocus
                   disabled={isLoading}
@@ -167,7 +167,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
 
               <button
                 type="submit"
-                disabled={isLoading || !username.trim() || !password.trim()}
+                disabled={isLoading || !email.trim() || !password.trim()}
                 className="w-full py-3 rounded-xl bg-accent hover:bg-accent-hover disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold transition-all flex items-center justify-center gap-2"
               >
                 {isLoading ? (
@@ -184,7 +184,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
               </button>
 
               <p className="text-[11px] text-text-muted text-center leading-relaxed">
-                Works with local accounts and MangaDex credentials
+                Sign in with your email and password
               </p>
             </form>
           )}

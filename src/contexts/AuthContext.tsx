@@ -1,180 +1,115 @@
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react';
-import * as authService from '../services/auth';
+import {
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+  updateProfile,
+  type User as FirebaseUser,
+} from 'firebase/auth';
+import { auth } from '../services/firebase';
 import type { UserProfile } from '../types';
 
 interface AuthContextType {
   user: UserProfile | null;
+  firebaseUser: FirebaseUser | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (username: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<void>;
   register: (email: string, username: string, password: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
   error: string | null;
   clearError: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-const CLIENT_ID = import.meta.env.VITE_MANGADEX_CLIENT_ID || '';
-const CLIENT_SECRET = import.meta.env.VITE_MANGADEX_CLIENT_SECRET || '';
-
-// Local accounts stored in localStorage
-const LOCAL_ACCOUNTS_KEY = 'baka_local_accounts';
-const LOCAL_SESSION_KEY = 'baka_local_session';
-
-interface LocalAccount {
-  email: string;
-  username: string;
-  passwordHash: string; // simple hash, not production-grade
-}
-
-function simpleHash(str: string): string {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash |= 0;
-  }
-  return hash.toString(36);
-}
-
-function getLocalAccounts(): LocalAccount[] {
-  try {
-    return JSON.parse(localStorage.getItem(LOCAL_ACCOUNTS_KEY) || '[]');
-  } catch { return []; }
-}
-
-function saveLocalAccounts(accounts: LocalAccount[]) {
-  localStorage.setItem(LOCAL_ACCOUNTS_KEY, JSON.stringify(accounts));
-}
-
-function getLocalSession(): UserProfile | null {
-  try {
-    const raw = localStorage.getItem(LOCAL_SESSION_KEY);
-    return raw ? JSON.parse(raw) : null;
-  } catch { return null; }
-}
-
-function saveLocalSession(user: UserProfile | null) {
-  if (user) {
-    localStorage.setItem(LOCAL_SESSION_KEY, JSON.stringify(user));
-  } else {
-    localStorage.removeItem(LOCAL_SESSION_KEY);
-  }
-}
-
 export function AuthProvider({ children }: { children: ReactNode }) {
-  // Check both MangaDex session and local session
-  const [user, setUser] = useState<UserProfile | null>(() => {
-    return authService.getUserProfile() || getLocalSession();
-  });
-  const [isLoading, setIsLoading] = useState(false);
+  const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
+  const [user, setUser] = useState<UserProfile | null>(null);
+  const [isLoading, setIsLoading] = useState(true); // true until onAuthStateChanged fires
   const [error, setError] = useState<string | null>(null);
 
   const isAuthenticated = !!user?.isLoggedIn;
 
-  // Auto-refresh MangaDex token on mount
+  // Listen for auth state changes (auto-restores session on refresh)
   useEffect(() => {
-    if (user?.isLoggedIn && authService.isTokenExpired()) {
-      if (CLIENT_ID && CLIENT_SECRET) {
-        authService.refreshToken(CLIENT_ID, CLIENT_SECRET).then(tokens => {
-          if (!tokens) {
-            // MangaDex token expired, but keep local session if it exists
-            const localSession = getLocalSession();
-            if (!localSession) {
-              setUser(null);
-            }
-          }
+    const unsubscribe = onAuthStateChanged(auth, (fbUser) => {
+      if (fbUser) {
+        setFirebaseUser(fbUser);
+        setUser({
+          username: fbUser.displayName || fbUser.email?.split('@')[0] || 'User',
+          isLoggedIn: true,
         });
+      } else {
+        setFirebaseUser(null);
+        setUser(null);
       }
-    }
-  }, [user]);
+      setIsLoading(false);
+    });
 
-  // MangaDex login (existing flow)
-  const login = useCallback(async (username: string, password: string) => {
+    return unsubscribe;
+  }, []);
+
+  // Firebase email/password login
+  const login = useCallback(async (email: string, password: string) => {
     setIsLoading(true);
     setError(null);
 
-    // First try local account login
-    const accounts = getLocalAccounts();
-    const localMatch = accounts.find(
-      a => a.username === username && a.passwordHash === simpleHash(password)
-    );
-
-    if (localMatch) {
-      const profile: UserProfile = { username: localMatch.username, isLoggedIn: true };
-      setUser(profile);
-      saveLocalSession(profile);
-      setIsLoading(false);
-      return;
-    }
-
-    // Then try MangaDex login
-    if (!CLIENT_ID || !CLIENT_SECRET) {
-      setError('No account found. Create one with Sign Up, or configure MangaDex API credentials for MangaDex login.');
-      setIsLoading(false);
-      return;
-    }
-
     try {
-      await authService.login(username, password, CLIENT_ID, CLIENT_SECRET);
-      const profile: UserProfile = { username, isLoggedIn: true };
-      setUser(profile);
+      await signInWithEmailAndPassword(auth, email, password);
+      // onAuthStateChanged will handle setting user state
     } catch (err: any) {
-      setError(err.message || 'Login failed');
-      throw err;
-    } finally {
+      const msg = firebaseErrorMessage(err.code);
+      setError(msg);
       setIsLoading(false);
+      throw err;
     }
   }, []);
 
-  // Local account registration
+  // Firebase registration
   const register = useCallback(async (email: string, username: string, password: string) => {
     setIsLoading(true);
     setError(null);
 
     try {
-      const accounts = getLocalAccounts();
-
-      // Check for existing username or email
-      if (accounts.find(a => a.username === username)) {
-        throw new Error('Username already taken');
-      }
-      if (accounts.find(a => a.email === email)) {
-        throw new Error('Email already registered');
-      }
-
-      // Create account
-      const newAccount: LocalAccount = {
-        email,
+      const credential = await createUserWithEmailAndPassword(auth, email, password);
+      // Set display name
+      await updateProfile(credential.user, { displayName: username });
+      // Force refresh the user state with the display name
+      setUser({
         username,
-        passwordHash: simpleHash(password),
-      };
-      accounts.push(newAccount);
-      saveLocalAccounts(accounts);
-
-      // Auto-login
-      const profile: UserProfile = { username, isLoggedIn: true };
-      setUser(profile);
-      saveLocalSession(profile);
+        isLoggedIn: true,
+      });
     } catch (err: any) {
-      setError(err.message || 'Registration failed');
-      throw err;
-    } finally {
+      const msg = firebaseErrorMessage(err.code);
+      setError(msg);
       setIsLoading(false);
+      throw err;
     }
   }, []);
 
-  const logout = useCallback(() => {
-    authService.logout();
-    saveLocalSession(null);
-    setUser(null);
+  const logout = useCallback(async () => {
+    await signOut(auth);
+    // onAuthStateChanged will handle clearing user state
   }, []);
 
   const clearError = useCallback(() => setError(null), []);
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated, isLoading, login, register, logout, error, clearError }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        firebaseUser,
+        isAuthenticated,
+        isLoading,
+        login,
+        register,
+        logout,
+        error,
+        clearError,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
@@ -184,4 +119,27 @@ export function useAuth(): AuthContextType {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error('useAuth must be used within AuthProvider');
   return ctx;
+}
+
+// Map Firebase error codes to user-friendly messages
+function firebaseErrorMessage(code: string): string {
+  switch (code) {
+    case 'auth/user-not-found':
+      return 'No account found with this email.';
+    case 'auth/wrong-password':
+    case 'auth/invalid-credential':
+      return 'Incorrect email or password.';
+    case 'auth/email-already-in-use':
+      return 'An account with this email already exists.';
+    case 'auth/weak-password':
+      return 'Password must be at least 6 characters.';
+    case 'auth/invalid-email':
+      return 'Please enter a valid email address.';
+    case 'auth/too-many-requests':
+      return 'Too many attempts. Please try again later.';
+    case 'auth/network-request-failed':
+      return 'Network error. Check your connection.';
+    default:
+      return `Authentication failed (${code})`;
+  }
 }
