@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
   ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Settings, X,
   Maximize, Minimize, BookOpen, Columns2, AlignVerticalSpaceAround,
-  FileText, Sun, ZoomIn, ZoomOut
+  FileText, Sun, ZoomIn, ZoomOut, ExternalLink, AlertTriangle
 } from 'lucide-react';
 import { getChapterPages, getMangaFeed, getMangaDetails, buildChapterImageUrl } from '../services/mangadex';
 import { saveReadingProgress, getReaderSettings, saveReaderSettings, markChapterRead, addToHistory } from '../services/storage';
@@ -27,39 +27,51 @@ export default function ReaderPage() {
   const [chapterNum, setChapterNum] = useState<string | null>(null);
   const [allChapters, setAllChapters] = useState<Chapter[]>([]);
   const [currentChapterIndex, setCurrentChapterIndex] = useState(-1);
+  const [externalUrl, setExternalUrl] = useState<string | null>(null);
 
   const controlsTimeout = useRef<ReturnType<typeof setTimeout>>(undefined);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Load chapter pages
+  // Load chapter pages — first check if it's an external chapter
   useEffect(() => {
     if (!chapterId) return;
     setLoading(true);
     setError(null);
+    setExternalUrl(null);
     setCurrentPage(0);
 
-    getChapterPages(chapterId)
-      .then(res => {
-        // Try full quality first, fall back to data-saver
-        let urls: string[];
-        if (res.chapter.data.length > 0) {
-          urls = res.chapter.data.map(file =>
-            buildChapterImageUrl(res.baseUrl, res.chapter.hash, file, false)
-          );
-        } else if (res.chapter.dataSaver && res.chapter.dataSaver.length > 0) {
-          urls = res.chapter.dataSaver.map(file =>
-            buildChapterImageUrl(res.baseUrl, res.chapter.hash, file, true)
-          );
-        } else {
-          setError('No pages available for this chapter. The chapter may have been removed or is not available through the MangaDex@Home network.');
+    // Check chapter metadata for externalUrl before trying to load pages
+    fetch(`/api/chapter/${chapterId}`)
+      .then(res => res.json())
+      .then(data => {
+        const extUrl = data?.data?.attributes?.externalUrl;
+        if (extUrl) {
+          setExternalUrl(extUrl);
+          setError('This chapter is hosted externally and cannot be read in BakaReader.');
           setLoading(false);
           return;
         }
-        setPages(urls);
-        setLoading(false);
 
-        // Mark chapter as read
-        markChapterRead(chapterId);
+        // Not external — load pages from MangaDex@Home
+        return getChapterPages(chapterId).then(res => {
+          let urls: string[];
+          if (res.chapter.data.length > 0) {
+            urls = res.chapter.data.map(file =>
+              buildChapterImageUrl(res.baseUrl, res.chapter.hash, file, false)
+            );
+          } else if (res.chapter.dataSaver && res.chapter.dataSaver.length > 0) {
+            urls = res.chapter.dataSaver.map(file =>
+              buildChapterImageUrl(res.baseUrl, res.chapter.hash, file, true)
+            );
+          } else {
+            setError('No pages available for this chapter. It may have been removed from MangaDex.');
+            setLoading(false);
+            return;
+          }
+          setPages(urls);
+          setLoading(false);
+          markChapterRead(chapterId);
+        });
       })
       .catch(err => {
         setError(err.message || 'Failed to load chapter');
@@ -194,13 +206,33 @@ export default function ReaderPage() {
   if (error) {
     return (
       <div className="fixed inset-0 z-50 bg-bg-primary flex items-center justify-center">
-        <div className="text-center max-w-sm">
-          <BookOpen size={40} className="text-text-muted mx-auto mb-4" />
-          <h2 className="text-lg font-semibold text-text-primary mb-2">Failed to load chapter</h2>
-          <p className="text-sm text-text-secondary mb-4">{error}</p>
-          <button onClick={() => navigate(-1)} className="px-4 py-2 rounded-xl bg-accent text-white text-sm font-medium">
-            Go Back
-          </button>
+        <div className="text-center max-w-md px-6">
+          <div className="w-16 h-16 rounded-2xl bg-bg-tertiary flex items-center justify-center mx-auto mb-5">
+            <AlertTriangle size={28} className="text-warning" />
+          </div>
+          <h2 className="text-xl font-semibold text-text-primary mb-2">
+            {externalUrl ? 'Manga Not Available' : 'Failed to Load Chapter'}
+          </h2>
+          <p className="text-sm text-text-secondary mb-6 leading-relaxed">{error}</p>
+          <div className="flex items-center justify-center gap-3">
+            <button
+              onClick={() => navigate(mangaId ? `/manga/${mangaId}` : -1 as any)}
+              className="px-5 py-2.5 rounded-xl bg-bg-tertiary text-text-primary text-sm font-medium hover:bg-bg-hover transition-colors"
+            >
+              Go Back
+            </button>
+            {externalUrl && (
+              <a
+                href={externalUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-accent hover:bg-accent-hover text-white text-sm font-medium transition-colors"
+              >
+                Read on External Site
+                <ExternalLink size={14} />
+              </a>
+            )}
+          </div>
         </div>
       </div>
     );

@@ -42,17 +42,24 @@ export default function FeaturedBanner() {
   const next = () => setCurrent(c => (c + 1) % manga.length);
 
   return (
-    <div className="relative w-full h-64 md:h-[22rem] rounded-lg overflow-hidden group">
-      {/* Background */}
+    <div className="relative w-full h-72 md:h-[24rem] rounded-lg overflow-hidden group">
+      {/* Blurred background fill — zoomed + saturated cover */}
       <img
         src={coverUrl}
         alt=""
-        className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.02]"
+        className="absolute inset-0 w-full h-full object-cover scale-125 blur-xl saturate-150 brightness-50 transition-transform duration-700 group-hover:scale-130"
+        referrerPolicy="no-referrer"
+      />
+      {/* Sharper cover on the right */}
+      <img
+        src={coverUrl}
+        alt=""
+        className="absolute right-0 top-0 h-full w-1/2 md:w-2/5 object-cover opacity-60 mask-l-from-0 mask-l-to-100"
         referrerPolicy="no-referrer"
       />
       {/* Overlays */}
-      <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/60 to-transparent" />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/50 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20" />
 
       {/* Content */}
       <div className="relative h-full flex flex-col justify-end p-6 md:p-10 max-w-xl">
