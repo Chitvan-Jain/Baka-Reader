@@ -24,6 +24,8 @@ export default function MangaDetailPage() {
   const [manga, setManga] = useState<Manga | null>(null);
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [retryTick, setRetryTick] = useState(0);
   const [chaptersLoading, setChaptersLoading] = useState(true);
   const [showFullDesc, setShowFullDesc] = useState(false);
   const [isFav, setIsFav] = useState(false);
@@ -34,13 +36,14 @@ export default function MangaDetailPage() {
   useEffect(() => {
     if (!id) return;
     setLoading(true);
+    setLoadError(false);
     setChaptersLoading(true);
     setIsFav(isInFavorites(id));
     setIsRL(isInReadLater(id));
 
     getMangaDetails(id)
       .then(res => { setManga(res.data); setLoading(false); })
-      .catch(() => setLoading(false));
+      .catch(() => { setLoadError(true); setLoading(false); });
 
     getMangaFeed(id, 0, 100)
       .then(res => { setChapters(res.data); setChaptersLoading(false); })
@@ -55,7 +58,22 @@ export default function MangaDetailPage() {
         }
       })
       .catch(() => {});
-  }, [id]);
+  }, [id, retryTick]);
+
+  if (loadError) {
+    return (
+      <div className="site-container py-8 animate-fade-in">
+        <div className="text-center py-14 max-w-sm mx-auto">
+          <BookOpen size={40} className="text-text-muted mx-auto mb-4" />
+          <h2 className="text-lg font-semibold text-text-primary mb-2">Failed to load manga</h2>
+          <p className="text-sm text-text-secondary mb-4">MangaDex could not be reached. Check your connection and try again.</p>
+          <button onClick={() => setRetryTick(t => t + 1)} className="px-4 py-2 rounded-xl bg-accent text-white text-sm font-medium">
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (loading || !manga) {
     return (
