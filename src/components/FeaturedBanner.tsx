@@ -60,7 +60,7 @@ export default function FeaturedBanner() {
           {/* Tags */}
           <div className="flex flex-wrap gap-1.5 mb-3">
             {tags.map(tag => (
-              <span key={tag} className="px-2 py-0.5 rounded text-[11px] font-medium bg-white/10 text-white/80">
+              <span key={tag} className="px-2.5 py-1 rounded text-[11px] font-medium bg-white/15 text-white/90 backdrop-blur-sm">
                 {tag}
               </span>
             ))}

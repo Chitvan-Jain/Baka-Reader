@@ -48,11 +48,10 @@ export default function Header() {
                   <Link
                     key={link.to}
                     to={link.to}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                      isActive(link.to)
-                        ? 'bg-accent/10 text-accent'
-                        : 'text-text-secondary hover:text-text-primary hover:bg-bg-tertiary'
-                    }`}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${isActive(link.to)
+                      ? 'bg-accent/10 text-accent'
+                      : 'text-text-secondary hover:text-text-primary hover:bg-bg-tertiary'
+                      }`}
                   >
                     <Icon size={15} />
                     {link.label}
@@ -102,7 +101,7 @@ export default function Header() {
               ) : (
                 <button
                   onClick={() => setLoginModalOpen(true)}
-                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-accent hover:bg-accent-hover text-white text-sm font-medium transition-colors"
+                  className="flex items-center gap-1.5 px-5 py-1.5 rounded-lg bg-accent hover:bg-accent-hover text-white text-sm font-medium transition-colors"
                 >
                   <LogIn size={14} />
                   <span className="hidden sm:inline">Login</span>
@@ -136,11 +135,10 @@ export default function Header() {
                     key={link.to}
                     to={link.to}
                     onClick={() => setMobileMenuOpen(false)}
-                    className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                      isActive(link.to)
-                        ? 'bg-accent/10 text-accent'
-                        : 'text-text-secondary hover:text-text-primary hover:bg-bg-tertiary'
-                    }`}
+                    className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${isActive(link.to)
+                      ? 'bg-accent/10 text-accent'
+                      : 'text-text-secondary hover:text-text-primary hover:bg-bg-tertiary'
+                      }`}
                   >
                     <Icon size={16} />
                     {link.label}
