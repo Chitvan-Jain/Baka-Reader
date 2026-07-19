@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Library, List, LogIn, Menu, X, BookOpen, Sun, Moon } from 'lucide-react';
+import {
+  Home, Library, List, LogIn, Menu, X, BookOpen, Sun, Moon,
+  CheckCircle2, Clock, TrendingUp, Sparkles
+} from 'lucide-react';
 import SearchBar from './SearchBar';
 import LoginModal from './LoginModal';
 import { useAuth } from '../contexts/AuthContext';
@@ -20,7 +23,15 @@ export default function Header() {
     { to: '/lists', label: 'Lists', icon: List },
   ];
 
+  const browseLinks = [
+    { to: '/search?status=completed&sort=followedCount:desc', label: 'Completed', icon: CheckCircle2 },
+    { to: '/search?sort=latestUploadedChapter:desc', label: 'Latest', icon: Clock },
+    { to: '/search?sort=followedCount:desc', label: 'Popular', icon: TrendingUp },
+    { to: '/search?sort=createdAt:desc', label: 'New', icon: Sparkles },
+  ];
+
   const isActive = (path: string) => location.pathname === path;
+  const isBrowseActive = (to: string) => location.pathname + location.search === to;
 
   return (
     <>
@@ -48,10 +59,11 @@ export default function Header() {
                   <Link
                     key={link.to}
                     to={link.to}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${isActive(link.to)
-                      ? 'bg-accent/10 text-accent'
-                      : 'text-text-secondary hover:text-text-primary hover:bg-bg-tertiary'
-                      }`}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                      isActive(link.to)
+                        ? 'bg-accent/10 text-accent'
+                        : 'text-text-secondary hover:text-text-primary hover:bg-bg-tertiary'
+                    }`}
                   >
                     <Icon size={15} />
                     {link.label}
@@ -118,6 +130,27 @@ export default function Header() {
             </div>
           </div>
 
+          {/* Browse bar (desktop) — below the main header row */}
+          <div className="hidden md:flex items-center gap-1 pb-2 -mt-0.5">
+            {browseLinks.map(link => {
+              const Icon = link.icon;
+              return (
+                <Link
+                  key={link.to}
+                  to={link.to}
+                  className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+                    isBrowseActive(link.to)
+                      ? 'bg-accent/10 text-accent'
+                      : 'text-text-muted hover:text-text-primary hover:bg-bg-tertiary'
+                  }`}
+                >
+                  <Icon size={12} />
+                  {link.label}
+                </Link>
+              );
+            })}
+          </div>
+
           {/* Mobile search */}
           <div className="md:hidden pb-2.5">
             <SearchBar />
@@ -135,16 +168,40 @@ export default function Header() {
                     key={link.to}
                     to={link.to}
                     onClick={() => setMobileMenuOpen(false)}
-                    className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${isActive(link.to)
-                      ? 'bg-accent/10 text-accent'
-                      : 'text-text-secondary hover:text-text-primary hover:bg-bg-tertiary'
-                      }`}
+                    className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                      isActive(link.to)
+                        ? 'bg-accent/10 text-accent'
+                        : 'text-text-secondary hover:text-text-primary hover:bg-bg-tertiary'
+                    }`}
                   >
                     <Icon size={16} />
                     {link.label}
                   </Link>
                 );
               })}
+
+              {/* Browse links in mobile */}
+              <div className="border-t border-border mt-1.5 pt-1.5">
+                <p className="px-3 py-1.5 text-[10px] font-semibold text-text-muted uppercase tracking-wider">Browse</p>
+                {browseLinks.map(link => {
+                  const Icon = link.icon;
+                  return (
+                    <Link
+                      key={link.to}
+                      to={link.to}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                        isBrowseActive(link.to)
+                          ? 'bg-accent/10 text-accent'
+                          : 'text-text-secondary hover:text-text-primary hover:bg-bg-tertiary'
+                      }`}
+                    >
+                      <Icon size={16} />
+                      {link.label}
+                    </Link>
+                  );
+                })}
+              </div>
             </nav>
           </div>
         )}

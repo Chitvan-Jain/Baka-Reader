@@ -28,13 +28,20 @@ export default function SearchPage() {
   const [offset, setOffset] = useState(0);
   const [showFilters, setShowFilters] = useState(false);
   const [tags, setTags] = useState<Tag[]>([]);
+
+  // Read all filter params from URL
+  const initStatus = searchParams.get('status');
+  const initSort = searchParams.get('sort');
+  const initTag = searchParams.get('tags');
+  const initQ = searchParams.get('q');
+
   const [filters, setFilters] = useState<SearchFilters>({
-    title: searchParams.get('q') || '',
-    status: [],
+    title: initQ || '',
+    status: initStatus ? [initStatus] : [],
     publicationDemographic: [],
     contentRating: ['safe', 'suggestive'],
-    includedTags: searchParams.get('tags') ? [searchParams.get('tags')!] : [],
-    sort: 'relevance:desc',
+    includedTags: initTag ? [initTag] : [],
+    sort: initSort || 'relevance:desc',
   });
 
   const LIMIT = 20;
@@ -44,12 +51,16 @@ export default function SearchPage() {
     getMangaTags().then(res => setTags(res.data)).catch(() => {});
   }, []);
 
-  // Search on mount if query exists
+  // Search on mount if any filter param exists
   useEffect(() => {
-    const q = searchParams.get('q');
-    const tag = searchParams.get('tags');
-    if (q || tag) {
-      performSearch({ ...filters, title: q || '', includedTags: tag ? [tag] : filters.includedTags }, 0);
+    if (initQ || initTag || initStatus || initSort) {
+      performSearch({
+        ...filters,
+        title: initQ || '',
+        includedTags: initTag ? [initTag] : filters.includedTags,
+        status: initStatus ? [initStatus] : [],
+        sort: initSort || 'relevance:desc',
+      }, 0);
     }
   }, []);
 
