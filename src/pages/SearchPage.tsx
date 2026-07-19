@@ -51,18 +51,35 @@ export default function SearchPage() {
     getMangaTags().then(res => setTags(res.data)).catch(() => {});
   }, []);
 
-  // Search on mount if any filter param exists
+  // React to URL param changes (browse buttons, direct links, etc.)
+  const urlKey = searchParams.toString();
+
   useEffect(() => {
-    if (initQ || initTag || initStatus || initSort) {
-      performSearch({
-        ...filters,
-        title: initQ || '',
-        includedTags: initTag ? [initTag] : filters.includedTags,
-        status: initStatus ? [initStatus] : [],
-        sort: initSort || 'relevance:desc',
-      }, 0);
+    const paramQ = searchParams.get('q');
+    const paramTag = searchParams.get('tags');
+    const paramStatus = searchParams.get('status');
+    const paramSort = searchParams.get('sort');
+
+    const newFilters: SearchFilters = {
+      title: paramQ || '',
+      status: paramStatus ? [paramStatus] : [],
+      publicationDemographic: [],
+      contentRating: ['safe', 'suggestive'],
+      includedTags: paramTag ? [paramTag] : [],
+      sort: paramSort || 'relevance:desc',
+    };
+
+    setQuery(paramQ || '');
+    setFilters(newFilters);
+
+    if (paramQ || paramTag || paramStatus || paramSort) {
+      performSearch(newFilters, 0);
+    } else {
+      setResults([]);
+      setTotal(0);
+      setOffset(0);
     }
-  }, []);
+  }, [urlKey]);
 
   const performSearch = async (searchFilters: SearchFilters, searchOffset: number) => {
     setLoading(true);
