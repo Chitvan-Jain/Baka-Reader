@@ -5,7 +5,7 @@ import {
   Maximize, Minimize, BookOpen, Columns2, AlignVerticalSpaceAround,
   FileText, Sun, ZoomIn, ZoomOut, ExternalLink, AlertTriangle
 } from 'lucide-react';
-import { getChapterPages, getMangaFeed, getMangaDetails, buildChapterImageUrl } from '../services/mangadex';
+import { getChapter, getChapterPages, getMangaFeed, getMangaDetails, buildChapterImageUrl } from '../services/mangadex';
 import { saveReadingProgress, getReaderSettings, saveReaderSettings, markChapterRead, addToHistory } from '../services/storage';
 import { getMangaTitle, getCoverFileName } from '../types';
 import type { ReadingMode, Chapter } from '../types';
@@ -31,6 +31,7 @@ export default function ReaderPage() {
 
   const controlsTimeout = useRef<ReturnType<typeof setTimeout>>(undefined);
   const containerRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   // Load chapter pages — first check if it's an external chapter
   useEffect(() => {
@@ -84,8 +85,7 @@ export default function ReaderPage() {
     if (!chapterId) return;
     // We need to find the manga ID from the chapter
     // First, get chapter info via the API
-    fetch(`/api/chapter/${chapterId}?includes[]=manga`)
-      .then(res => res.json())
+    getChapter(chapterId)
       .then(data => {
         const ch = data.data;
         setChapterNum(ch.attributes.chapter);
@@ -137,6 +137,26 @@ export default function ReaderPage() {
       mangaTitle,
     });
   }, [currentPage, chapterId, mangaId, mangaTitle, pages.length]);
+
+  // Track current page in vertical mode: the image crossing the viewport's
+  // vertical center is the current page
+  useEffect(() => {
+    if (settings.mode !== 'vertical' || pages.length === 0) return;
+    const container = scrollRef.current;
+    if (!container) return;
+    const observer = new IntersectionObserver(
+      entries => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            setCurrentPage(Number((entry.target as HTMLElement).dataset.page));
+          }
+        }
+      },
+      { root: container, rootMargin: '-45% 0px -45% 0px' }
+    );
+    container.querySelectorAll('img[data-page]').forEach(img => observer.observe(img));
+    return () => observer.disconnect();
+  }, [settings.mode, pages]);
 
   // Keyboard navigation
   useEffect(() => {
@@ -359,7 +379,7 @@ export default function ReaderPage() {
       )}
 
       {/* Reader content */}
-      <div className="flex-1 overflow-auto" style={{ filter: `brightness(${settings.brightness}%)` }}>
+      <div ref={scrollRef} className="flex-1 overflow-auto" style={{ filter: `brightness(${settings.brightness}%)` }}>
         {settings.mode === 'vertical' ? (
           /* Vertical scroll */
           <div className="flex flex-col items-center py-4 gap-1">
@@ -368,13 +388,11 @@ export default function ReaderPage() {
                 key={i}
                 src={url}
                 alt={`Page ${i + 1}`}
+                data-page={i}
                 className="max-w-full"
                 style={{ maxWidth: `${settings.zoom}%` }}
                 loading={i < 5 ? 'eager' : 'lazy'}
                 referrerPolicy="no-referrer"
-                onLoad={() => {
-                  // Track current page based on scroll position
-                }}
               />
             ))}
           </div>

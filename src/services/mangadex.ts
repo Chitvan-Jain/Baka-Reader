@@ -40,23 +40,33 @@ class RateLimiter {
 
 const rateLimiter = new RateLimiter();
 
+// Transient failures worth retrying: rate limits, server errors, proxy/DNS hiccups
+const RETRYABLE_STATUS = [429, 500, 502, 503, 504];
+
 async function apiFetch<T>(endpoint: string, options?: RequestInit): Promise<T> {
-  await rateLimiter.acquire();
-  try {
-    const res = await fetch(`${API_BASE}${endpoint}`, {
-      ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        ...options?.headers,
-      },
-    });
-    if (!res.ok) {
-      throw new Error(`MangaDex API error: ${res.status} ${res.statusText}`);
+  let lastError: Error = new Error('MangaDex API error');
+  for (let attempt = 0; attempt < 3; attempt++) {
+    if (attempt > 0) await new Promise(r => setTimeout(r, 500 * 2 ** attempt));
+    await rateLimiter.acquire();
+    try {
+      const res = await fetch(`${API_BASE}${endpoint}`, {
+        ...options,
+        headers: {
+          'Content-Type': 'application/json',
+          ...options?.headers,
+        },
+      });
+      if (res.ok) return await res.json();
+      lastError = new Error(`MangaDex API error: ${res.status} ${res.statusText}`);
+      if (!RETRYABLE_STATUS.includes(res.status)) break;
+    } catch (err) {
+      // Network-level failure (DNS, dropped connection) — retry
+      lastError = err instanceof Error ? err : new Error(String(err));
+    } finally {
+      rateLimiter.release();
     }
-    return res.json();
-  } finally {
-    rateLimiter.release();
   }
+  throw lastError;
 }
 
 // ─── Chapter Endpoints ─────────────────────────────────────────────
@@ -84,6 +94,10 @@ export async function getRecentChapters(
 
 export async function getChapterPages(chapterId: string): Promise<AtHomeResponse> {
   return apiFetch<AtHomeResponse>(`/at-home/server/${chapterId}`);
+}
+
+export async function getChapter(chapterId: string): Promise<{ data: Chapter }> {
+  return apiFetch<{ data: Chapter }>(`/chapter/${chapterId}?includes[]=manga`);
 }
 
 // ─── Manga Endpoints ───────────────────────────────────────────────
