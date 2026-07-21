@@ -8,6 +8,7 @@ import {
 import { getChapterPages, getMangaFeed, getMangaDetails, buildChapterImageUrl } from '../services/mangadex';
 import { saveReadingProgress, getReaderSettings, saveReaderSettings, markChapterRead, addToHistory } from '../services/storage';
 import { getMangaTitle, getCoverFileName } from '../types';
+import RetryImage from '../components/ui/RetryImage';
 import type { ReadingMode, Chapter } from '../types';
 
 export default function ReaderPage() {
@@ -364,7 +365,7 @@ export default function ReaderPage() {
           /* Vertical scroll */
           <div className="flex flex-col items-center py-4 gap-1">
             {pages.map((url, i) => (
-              <img
+              <RetryImage
                 key={i}
                 src={url}
                 alt={`Page ${i + 1}`}
@@ -372,9 +373,8 @@ export default function ReaderPage() {
                 style={{ maxWidth: `${settings.zoom}%` }}
                 loading={i < 5 ? 'eager' : 'lazy'}
                 referrerPolicy="no-referrer"
-                onLoad={() => {
-                  // Track current page based on scroll position
-                }}
+                maxRetries={3}
+                retryDelay={2000}
               />
             ))}
           </div>
@@ -383,13 +383,15 @@ export default function ReaderPage() {
           <div className="h-full flex items-center justify-center gap-1 px-4">
             {[currentPage, currentPage + 1].map(pageIdx => (
               pageIdx < pages.length && (
-                <img
+                <RetryImage
                   key={pageIdx}
                   src={pages[pageIdx]}
                   alt={`Page ${pageIdx + 1}`}
                   className="max-h-full object-contain"
                   style={{ maxWidth: `${settings.zoom / 2}%` }}
                   referrerPolicy="no-referrer"
+                  maxRetries={3}
+                  retryDelay={2000}
                 />
               )
             ))}
@@ -397,12 +399,14 @@ export default function ReaderPage() {
         ) : (
           /* Single page */
           <div className="h-full flex items-center justify-center px-4">
-            <img
+            <RetryImage
               src={pages[currentPage]}
               alt={`Page ${currentPage + 1}`}
               className="max-h-full max-w-full object-contain"
               style={{ maxWidth: `${settings.zoom}%` }}
               referrerPolicy="no-referrer"
+              maxRetries={3}
+              retryDelay={2000}
             />
           </div>
         )}
