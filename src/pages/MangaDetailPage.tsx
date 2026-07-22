@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   BookOpen, Heart, Clock, Star, Users, Calendar, Globe, ChevronDown,
-  ChevronUp, Check, BookMarked, Play, ExternalLink, ArrowLeft
+  ChevronUp, Check, BookMarked, Play, ExternalLink, ArrowLeft, ListPlus, CheckCircle2
 } from 'lucide-react';
 import { getMangaDetails, getMangaFeed, getMangaStatistics } from '../services/mangadex';
 import { getMangaTitle, getCoverFileName, getCoverUrl, formatRelativeTime, getLanguageFlag } from '../types';
@@ -13,7 +13,9 @@ import {
   addToFavorites, removeFromFavorites, isInFavorites,
   addToReadLater, removeFromReadLater, isInReadLater,
   getReadingProgress, isChapterRead, markChapterRead, markChapterUnread,
+  getReadingLists, addMangaToList, removeMangaFromList,
 } from '../services/storage';
+import type { ReadingList } from '../types';
 import type { Manga, Chapter } from '../types';
 
 export default function MangaDetailPage() {
@@ -30,6 +32,8 @@ export default function MangaDetailPage() {
   const [isRL, setIsRL] = useState(false);
   const [rating, setRating] = useState<number | null>(null);
   const [follows, setFollows] = useState<number | null>(null);
+  const [showListMenu, setShowListMenu] = useState(false);
+  const [readingLists, setReadingLists] = useState<ReadingList[]>([]);
 
   useEffect(() => {
     if (!id) return;
@@ -37,6 +41,7 @@ export default function MangaDetailPage() {
     setChaptersLoading(true);
     setIsFav(isInFavorites(id));
     setIsRL(isInReadLater(id));
+    setReadingLists(getReadingLists());
 
     getMangaDetails(id)
       .then(res => { setManga(res.data); setLoading(false); })
@@ -230,6 +235,71 @@ export default function MangaDetailPage() {
               <Clock size={14} />
               {isRL ? 'In Read Later' : 'Read Later'}
             </button>
+
+            {/* Add to List */}
+            <div className="relative">
+              <button
+                onClick={() => { setReadingLists(getReadingLists()); setShowListMenu(!showListMenu); }}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-medium bg-bg-tertiary text-text-secondary hover:text-text-primary border border-border transition-colors"
+              >
+                <ListPlus size={14} />
+                Add to List
+              </button>
+
+              {showListMenu && (
+                <>
+                  <div className="fixed inset-0 z-30" onClick={() => setShowListMenu(false)} />
+                  <div className="absolute left-0 top-full mt-1.5 w-56 bg-bg-secondary border border-border rounded-lg shadow-lg overflow-hidden z-40 animate-scale-in">
+                    {readingLists.length === 0 ? (
+                      <div className="px-4 py-6 text-center">
+                        <p className="text-sm text-text-muted mb-2">No lists yet</p>
+                        <Link
+                          to="/lists"
+                          onClick={() => setShowListMenu(false)}
+                          className="text-xs text-accent hover:underline"
+                        >
+                          Create one →
+                        </Link>
+                      </div>
+                    ) : (
+                      <div className="py-1 max-h-60 overflow-y-auto">
+                        {readingLists.map(list => {
+                          const isInList = list.mangaIds.includes(id!);
+                          return (
+                            <button
+                              key={list.id}
+                              onClick={() => {
+                                if (isInList) {
+                                  removeMangaFromList(list.id, id!);
+                                  addToast(`Removed from "${list.name}"`, 'info');
+                                } else {
+                                  addMangaToList(list.id, id!);
+                                  addToast(`Added to "${list.name}"`, 'success');
+                                }
+                                setReadingLists(getReadingLists());
+                              }}
+                              className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-left text-sm hover:bg-bg-tertiary transition-colors"
+                            >
+                              {isInList ? (
+                                <CheckCircle2 size={15} className="text-accent shrink-0" />
+                              ) : (
+                                <div className="w-[15px] h-[15px] rounded-full border border-border shrink-0" />
+                              )}
+                              <span className={`truncate ${isInList ? 'text-accent font-medium' : 'text-text-secondary'}`}>
+                                {list.name}
+                              </span>
+                              <span className="text-xs text-text-muted ml-auto shrink-0">
+                                {list.mangaIds.length}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </div>
       </div>
