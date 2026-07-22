@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { ToastProvider } from './components/ui/Toast';
-import { mergeOnLogin, setCurrentUser } from './services/storage';
+import { pullOnLogin, clearOnLogout } from './services/storage';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import HomePage from './pages/HomePage';
@@ -29,11 +29,11 @@ function FirestoreSync() {
 
   useEffect(() => {
     if (firebaseUser) {
-      mergeOnLogin(firebaseUser.uid).catch(err => {
-        console.error('[FirestoreSync] Merge failed:', err);
+      pullOnLogin(firebaseUser.uid).catch(err => {
+        console.error('[FirestoreSync] Pull failed:', err);
       });
     } else {
-      setCurrentUser(null);
+      clearOnLogout();
     }
   }, [firebaseUser]);
 

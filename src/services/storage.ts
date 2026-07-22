@@ -20,7 +20,7 @@ const KEYS = {
   RECENT_SEARCHES: 'baka_recent_searches',
 } as const;
 
-// ─── Current user UID (set by AuthContext on login/logout) ─────────
+// ─── Current user UID (set on login/logout) ────────────────────────
 
 let _currentUid: string | null = null;
 
@@ -32,9 +32,15 @@ export function getCurrentUid(): string | null {
   return _currentUid;
 }
 
-// ─── localStorage helpers ──────────────────────────────────────────
+/** Returns true if a user is logged in */
+function isLoggedIn(): boolean {
+  return !!_currentUid;
+}
+
+// ─── localStorage helpers (used as a fast cache for logged-in users) ─
 
 function getItem<T>(key: string, fallback: T): T {
+  if (!isLoggedIn()) return fallback;
   try {
     const stored = localStorage.getItem(key);
     return stored ? JSON.parse(stored) : fallback;
@@ -44,6 +50,7 @@ function getItem<T>(key: string, fallback: T): T {
 }
 
 function setItem<T>(key: string, value: T): void {
+  if (!isLoggedIn()) return;
   try {
     localStorage.setItem(key, JSON.stringify(value));
   } catch (e) {
@@ -51,105 +58,58 @@ function setItem<T>(key: string, value: T): void {
   }
 }
 
-// ─── Firestore sync (fire-and-forget for writes) ───────────────────
+// ─── Firestore sync (fire-and-forget writes) ───────────────────────
 
 function syncField(field: keyof UserData, value: any): void {
   if (!_currentUid) return;
   firestore.setUserData(_currentUid, { [field]: value }).catch(() => {});
 }
 
+// ─── Login / Logout ────────────────────────────────────────────────
+
 /**
- * Called once on login: pulls Firestore data, merges with localStorage,
- * writes merged result back to both.
+ * Called once on login: pulls Firestore data into localStorage cache.
  */
-export async function mergeOnLogin(uid: string): Promise<void> {
+export async function pullOnLogin(uid: string): Promise<void> {
   setCurrentUser(uid);
 
   const remote = await firestore.getUserData(uid);
 
-  // Merge favorites (union by mangaId, keep latest)
-  const localFavs = getItem<FavoriteItem[]>(KEYS.FAVORITES, []);
-  const mergedFavs = mergeById(localFavs, remote.favorites, 'mangaId');
-  setItem(KEYS.FAVORITES, mergedFavs);
+  // Populate localStorage cache from Firestore
+  setItem(KEYS.FAVORITES, remote.favorites);
+  setItem(KEYS.READ_LATER, remote.readLater);
+  setItem(KEYS.READING_PROGRESS, remote.readingProgress);
+  setItem(KEYS.READING_HISTORY, remote.readingHistory);
 
-  // Merge read-later
-  const localRL = getItem<ReadLaterItem[]>(KEYS.READ_LATER, []);
-  const mergedRL = mergeById(localRL, remote.readLater, 'mangaId');
-  setItem(KEYS.READ_LATER, mergedRL);
-
-  // Merge reading progress (latest timestamp wins per mangaId)
-  const localProgress = getItem<Record<string, ReadingProgress>>(KEYS.READING_PROGRESS, {});
-  const mergedProgress = { ...remote.readingProgress };
-  for (const [id, prog] of Object.entries(localProgress)) {
-    if (!mergedProgress[id] || prog.timestamp > mergedProgress[id].timestamp) {
-      mergedProgress[id] = prog;
-    }
+  // Convert readChapters array to record for fast lookups
+  const readChMap: Record<string, boolean> = {};
+  for (const id of remote.readChapters) {
+    readChMap[id] = true;
   }
-  setItem(KEYS.READING_PROGRESS, mergedProgress);
+  setItem(KEYS.READ_CHAPTERS, readChMap);
+  setItem(KEYS.READING_LISTS, remote.readingLists);
 
-  // Merge reading history (union by mangaId, latest first, cap at 100)
-  const localHistory = getItem<ReadingHistoryEntry[]>(KEYS.READING_HISTORY, []);
-  const mergedHistory = mergeById(localHistory, remote.readingHistory, 'mangaId')
-    .sort((a, b) => b.timestamp - a.timestamp)
-    .slice(0, 100);
-  setItem(KEYS.READING_HISTORY, mergedHistory);
-
-  // Merge read chapters (union)
-  const localReadCh = getItem<Record<string, boolean>>(KEYS.READ_CHAPTERS, {});
-  const remoteReadChSet = new Set(remote.readChapters);
-  for (const id of Object.keys(localReadCh)) {
-    remoteReadChSet.add(id);
-  }
-  const mergedReadCh: Record<string, boolean> = {};
-  for (const id of remoteReadChSet) {
-    mergedReadCh[id] = true;
-  }
-  setItem(KEYS.READ_CHAPTERS, mergedReadCh);
-
-  // Merge reading lists (union by id)
-  const localLists = getItem<ReadingList[]>(KEYS.READING_LISTS, []);
-  const mergedLists = mergeById(localLists, remote.readingLists, 'id');
-  setItem(KEYS.READING_LISTS, mergedLists);
-
-  // Reader settings: remote wins if exists
   if (remote.readerSettings) {
     setItem(KEYS.READER_SETTINGS, remote.readerSettings);
   }
-
-  // Push merged data back to Firestore
-  await firestore.setUserData(uid, {
-    favorites: mergedFavs,
-    readLater: mergedRL,
-    readingProgress: mergedProgress,
-    readingHistory: mergedHistory,
-    readChapters: [...remoteReadChSet],
-    readingLists: mergedLists,
-    readerSettings: getItem<ReaderSettings>(KEYS.READER_SETTINGS, null as any),
-  });
 }
 
-/** Merge two arrays by a key field. Local items with newer timestamps win. */
-function mergeById<T extends Record<string, any>>(local: T[], remote: T[], key: string): T[] {
-  const map = new Map<string, T>();
-  for (const item of remote) {
-    map.set(item[key], item);
+/**
+ * Called on logout: clears all user data from localStorage.
+ */
+export function clearOnLogout(): void {
+  _currentUid = null;
+  for (const key of Object.values(KEYS)) {
+    // Keep recent searches (not user data)
+    if (key === KEYS.RECENT_SEARCHES) continue;
+    localStorage.removeItem(key);
   }
-  for (const item of local) {
-    const existing = map.get(item[key]);
-    if (!existing) {
-      map.set(item[key], item);
-    } else if (item.timestamp && existing.timestamp && item.timestamp > existing.timestamp) {
-      map.set(item[key], item);
-    } else if (item.addedAt && existing.addedAt && item.addedAt > existing.addedAt) {
-      map.set(item[key], item);
-    }
-  }
-  return [...map.values()];
 }
 
 // ─── Reading Progress ──────────────────────────────────────────────
 
 export function saveReadingProgress(progress: ReadingProgress): void {
+  if (!isLoggedIn()) return;
   const all = getItem<Record<string, ReadingProgress>>(KEYS.READING_PROGRESS, {});
   all[progress.mangaId] = { ...progress, timestamp: Date.now() };
   setItem(KEYS.READING_PROGRESS, all);
@@ -157,16 +117,19 @@ export function saveReadingProgress(progress: ReadingProgress): void {
 }
 
 export function getReadingProgress(mangaId: string): ReadingProgress | null {
+  if (!isLoggedIn()) return null;
   const all = getItem<Record<string, ReadingProgress>>(KEYS.READING_PROGRESS, {});
   return all[mangaId] || null;
 }
 
 export function getAllReadingProgress(): ReadingProgress[] {
+  if (!isLoggedIn()) return [];
   const all = getItem<Record<string, ReadingProgress>>(KEYS.READING_PROGRESS, {});
   return Object.values(all).sort((a, b) => b.timestamp - a.timestamp);
 }
 
 export function removeReadingProgress(mangaId: string): void {
+  if (!isLoggedIn()) return;
   const all = getItem<Record<string, ReadingProgress>>(KEYS.READING_PROGRESS, {});
   delete all[mangaId];
   setItem(KEYS.READING_PROGRESS, all);
@@ -176,6 +139,7 @@ export function removeReadingProgress(mangaId: string): void {
 // ─── Read Later ────────────────────────────────────────────────────
 
 export function addToReadLater(item: ReadLaterItem): void {
+  if (!isLoggedIn()) return;
   const list = getItem<ReadLaterItem[]>(KEYS.READ_LATER, []);
   if (!list.find(i => i.mangaId === item.mangaId)) {
     list.unshift({ ...item, addedAt: Date.now() });
@@ -185,6 +149,7 @@ export function addToReadLater(item: ReadLaterItem): void {
 }
 
 export function removeFromReadLater(mangaId: string): void {
+  if (!isLoggedIn()) return;
   const list = getItem<ReadLaterItem[]>(KEYS.READ_LATER, []);
   const updated = list.filter(i => i.mangaId !== mangaId);
   setItem(KEYS.READ_LATER, updated);
@@ -192,16 +157,19 @@ export function removeFromReadLater(mangaId: string): void {
 }
 
 export function getReadLaterList(): ReadLaterItem[] {
+  if (!isLoggedIn()) return [];
   return getItem<ReadLaterItem[]>(KEYS.READ_LATER, []);
 }
 
 export function isInReadLater(mangaId: string): boolean {
+  if (!isLoggedIn()) return false;
   return getReadLaterList().some(i => i.mangaId === mangaId);
 }
 
 // ─── Favorites ─────────────────────────────────────────────────────
 
 export function addToFavorites(item: FavoriteItem): void {
+  if (!isLoggedIn()) return;
   const list = getItem<FavoriteItem[]>(KEYS.FAVORITES, []);
   if (!list.find(i => i.mangaId === item.mangaId)) {
     list.unshift({ ...item, addedAt: Date.now() });
@@ -211,6 +179,7 @@ export function addToFavorites(item: FavoriteItem): void {
 }
 
 export function removeFromFavorites(mangaId: string): void {
+  if (!isLoggedIn()) return;
   const list = getItem<FavoriteItem[]>(KEYS.FAVORITES, []);
   const updated = list.filter(i => i.mangaId !== mangaId);
   setItem(KEYS.FAVORITES, updated);
@@ -218,16 +187,19 @@ export function removeFromFavorites(mangaId: string): void {
 }
 
 export function getFavoritesList(): FavoriteItem[] {
+  if (!isLoggedIn()) return [];
   return getItem<FavoriteItem[]>(KEYS.FAVORITES, []);
 }
 
 export function isInFavorites(mangaId: string): boolean {
+  if (!isLoggedIn()) return false;
   return getFavoritesList().some(i => i.mangaId === mangaId);
 }
 
 // ─── Reading Lists ─────────────────────────────────────────────────
 
-export function createReadingList(name: string, description = ''): ReadingList {
+export function createReadingList(name: string, description = ''): ReadingList | null {
+  if (!isLoggedIn()) return null;
   const lists = getItem<ReadingList[]>(KEYS.READING_LISTS, []);
   const newList: ReadingList = {
     id: `list_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
@@ -244,10 +216,12 @@ export function createReadingList(name: string, description = ''): ReadingList {
 }
 
 export function getReadingLists(): ReadingList[] {
+  if (!isLoggedIn()) return [];
   return getItem<ReadingList[]>(KEYS.READING_LISTS, []);
 }
 
 export function updateReadingList(id: string, updates: Partial<ReadingList>): void {
+  if (!isLoggedIn()) return;
   const lists = getItem<ReadingList[]>(KEYS.READING_LISTS, []);
   const index = lists.findIndex(l => l.id === id);
   if (index !== -1) {
@@ -258,6 +232,7 @@ export function updateReadingList(id: string, updates: Partial<ReadingList>): vo
 }
 
 export function deleteReadingList(id: string): void {
+  if (!isLoggedIn()) return;
   const lists = getItem<ReadingList[]>(KEYS.READING_LISTS, []);
   const updated = lists.filter(l => l.id !== id);
   setItem(KEYS.READING_LISTS, updated);
@@ -265,6 +240,7 @@ export function deleteReadingList(id: string): void {
 }
 
 export function addMangaToList(listId: string, mangaId: string): void {
+  if (!isLoggedIn()) return;
   const lists = getItem<ReadingList[]>(KEYS.READING_LISTS, []);
   const list = lists.find(l => l.id === listId);
   if (list && !list.mangaIds.includes(mangaId)) {
@@ -276,6 +252,7 @@ export function addMangaToList(listId: string, mangaId: string): void {
 }
 
 export function removeMangaFromList(listId: string, mangaId: string): void {
+  if (!isLoggedIn()) return;
   const lists = getItem<ReadingList[]>(KEYS.READING_LISTS, []);
   const list = lists.find(l => l.id === listId);
   if (list) {
@@ -289,6 +266,7 @@ export function removeMangaFromList(listId: string, mangaId: string): void {
 // ─── Reading History ───────────────────────────────────────────────
 
 export function addToHistory(entry: ReadingHistoryEntry): void {
+  if (!isLoggedIn()) return;
   const history = getItem<ReadingHistoryEntry[]>(KEYS.READING_HISTORY, []);
   const filtered = history.filter(h => h.mangaId !== entry.mangaId);
   filtered.unshift({ ...entry, timestamp: Date.now() });
@@ -298,10 +276,12 @@ export function addToHistory(entry: ReadingHistoryEntry): void {
 }
 
 export function getReadingHistory(): ReadingHistoryEntry[] {
+  if (!isLoggedIn()) return [];
   return getItem<ReadingHistoryEntry[]>(KEYS.READING_HISTORY, []);
 }
 
 export function clearReadingHistory(): void {
+  if (!isLoggedIn()) return;
   setItem(KEYS.READING_HISTORY, []);
   syncField('readingHistory', []);
 }
@@ -309,6 +289,7 @@ export function clearReadingHistory(): void {
 // ─── Read Chapters ─────────────────────────────────────────────────
 
 export function markChapterRead(chapterId: string): void {
+  if (!isLoggedIn()) return;
   const chapters = getItem<Record<string, boolean>>(KEYS.READ_CHAPTERS, {});
   chapters[chapterId] = true;
   setItem(KEYS.READ_CHAPTERS, chapters);
@@ -316,6 +297,7 @@ export function markChapterRead(chapterId: string): void {
 }
 
 export function markChapterUnread(chapterId: string): void {
+  if (!isLoggedIn()) return;
   const chapters = getItem<Record<string, boolean>>(KEYS.READ_CHAPTERS, {});
   delete chapters[chapterId];
   setItem(KEYS.READ_CHAPTERS, chapters);
@@ -323,11 +305,13 @@ export function markChapterUnread(chapterId: string): void {
 }
 
 export function isChapterRead(chapterId: string): boolean {
+  if (!isLoggedIn()) return false;
   const chapters = getItem<Record<string, boolean>>(KEYS.READ_CHAPTERS, {});
   return !!chapters[chapterId];
 }
 
 export function getReadChapters(): string[] {
+  if (!isLoggedIn()) return [];
   const chapters = getItem<Record<string, boolean>>(KEYS.READ_CHAPTERS, {});
   return Object.keys(chapters);
 }
@@ -342,6 +326,7 @@ const DEFAULT_READER_SETTINGS: ReaderSettings = {
 };
 
 export function getReaderSettings(): ReaderSettings {
+  // Reader settings work even without login (local defaults)
   return getItem<ReaderSettings>(KEYS.READER_SETTINGS, DEFAULT_READER_SETTINGS);
 }
 
@@ -352,19 +337,27 @@ export function saveReaderSettings(settings: Partial<ReaderSettings>): void {
   syncField('readerSettings', merged);
 }
 
-// ─── Recent Searches (local-only, no sync) ─────────────────────────
+// ─── Recent Searches (always local, no auth required) ──────────────
 
 export function addRecentSearch(query: string): void {
-  const searches = getItem<string[]>(KEYS.RECENT_SEARCHES, []);
-  const filtered = searches.filter(s => s !== query);
-  filtered.unshift(query);
-  setItem(KEYS.RECENT_SEARCHES, filtered.slice(0, 10));
+  try {
+    const raw = localStorage.getItem(KEYS.RECENT_SEARCHES);
+    const searches: string[] = raw ? JSON.parse(raw) : [];
+    const filtered = searches.filter(s => s !== query);
+    filtered.unshift(query);
+    localStorage.setItem(KEYS.RECENT_SEARCHES, JSON.stringify(filtered.slice(0, 10)));
+  } catch {}
 }
 
 export function getRecentSearches(): string[] {
-  return getItem<string[]>(KEYS.RECENT_SEARCHES, []);
+  try {
+    const raw = localStorage.getItem(KEYS.RECENT_SEARCHES);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
 }
 
 export function clearRecentSearches(): void {
-  setItem(KEYS.RECENT_SEARCHES, []);
+  localStorage.setItem(KEYS.RECENT_SEARCHES, JSON.stringify([]));
 }
